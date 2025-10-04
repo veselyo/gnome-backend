@@ -23,9 +23,20 @@ function checkFlaskServer(callback) {
 // Start Flask backend
 function startFlask() {
   return new Promise((resolve, reject) => {
-    // Path to Python backend (development mode)
-    const pythonPath = path.join(__dirname, '../venv/bin/python3');
-    const appPath = path.join(__dirname, '../demo/app.py');
+    // Determine if we're in development or production
+    const isDev = !app.isPackaged;
+    
+    // Path to Python backend
+    let pythonPath, appPath;
+    if (isDev) {
+      // Development: use venv
+      pythonPath = path.join(__dirname, '../venv/bin/python3');
+      appPath = path.join(__dirname, '../demo/app.py');
+    } else {
+      // Production: use system Python (user must have Python 3.9+ installed)
+      pythonPath = '/usr/bin/python3';
+      appPath = path.join(process.resourcesPath, 'app', 'demo/app.py');
+    }
 
     // Set environment variables
     const env = Object.assign({}, process.env, {

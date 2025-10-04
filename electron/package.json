@@ -27,12 +27,23 @@
     "files": [
       "main.js",
       "preload.js",
-      "icon.png",
-      "../demo/**/*",
-      "../semantic_search/**/*",
-      "../venv/**/*",
-      "../requirements.txt",
-      "!**/{.DS_Store,.git,.gitignore,README.md}"
+      "icon.png"
+    ],
+    "extraResources": [
+      {
+        "from": "../demo",
+        "to": "app/demo",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../semantic_search",
+        "to": "app/semantic_search",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../requirements.txt",
+        "to": "app/requirements.txt"
+      }
     ],
     "mac": {
       "category": "public.app-category.productivity",
