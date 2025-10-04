@@ -1,8 +1,22 @@
-require('dotenv').config();
 const { app, BrowserWindow } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const net = require('net');
+const fs = require('fs');
+
+// Load environment variables
+// In development: use .env in electron folder
+// In production: use .gnome-env in user's home directory
+const isDev = !app.isPackaged;
+if (isDev) {
+  require('dotenv').config();
+} else {
+  const homedir = require('os').homedir();
+  const envPath = path.join(homedir, '.gnome-env');
+  if (fs.existsSync(envPath)) {
+    require('dotenv').config({ path: envPath });
+  }
+}
 
 let flaskProcess = null;
 let mainWindow = null;
@@ -25,7 +39,7 @@ function startFlask() {
   return new Promise((resolve, reject) => {
     // Determine if we're in development or production
     const isDev = !app.isPackaged;
-    
+
     // Path to Python backend
     let pythonPath, appPath;
     if (isDev) {
