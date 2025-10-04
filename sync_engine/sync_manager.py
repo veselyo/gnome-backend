@@ -41,11 +41,11 @@ class SyncManager:
         self.is_syncing = False
         self.sync_interval = 300  # 5 minutes
         self.sync_thread = None
-        self.max_files_per_sync = 50  # Process 50 files per sync for faster UI updates
+        self.max_files_per_sync = 200  # Process 200 files per sync (adaptive to total file count)
     
     def sync_all(self) -> Dict[str, Dict]:
         """
-        Sync all sources.
+        Sync all sources with adaptive batch sizing.
         
         Returns:
             Dict with results for each source
@@ -66,12 +66,21 @@ class SyncManager:
                     results[source_name] = {'error': 'Not authenticated'}
                     continue
                 
-                # Run sync with file limit for faster iterations
+                # Adaptive batch size: process more files initially, fewer later
+                indexed_count = len(self.db.get_files_by_source(source_name))
+                if indexed_count < 100:
+                    max_files = 500  # Index fast initially
+                elif indexed_count < 500:
+                    max_files = 200  # Medium speed
+                else:
+                    max_files = 50  # Slower for maintenance
+                
+                # Run sync with adaptive file limit
                 result = engine.sync(
                     self.voyage_client,
                     self.pinecone_idx,
                     self.namespace,
-                    max_files=self.max_files_per_sync
+                    max_files=max_files
                 )
                 results[source_name] = result
                 
