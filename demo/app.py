@@ -57,8 +57,9 @@ def index():
 
 @app.route("/api/files")
 def api_files():
-    """API endpoint to get list of all indexed files from all sources."""
+    """API endpoint to get list of all files (indexed + pending) from all sources."""
     try:
+        # Get indexed files from database
         db_files = SYNC_MANAGER.get_all_files()
         
         files = []
@@ -68,14 +69,21 @@ def api_files():
                 "uploadDate": f.get('indexed_at'),
                 "source": f['source'],
                 "size": f.get('file_size'),
-                "cloudUrl": f.get('metadata', {}).get('webUrl') if isinstance(f.get('metadata'), dict) else None
+                "cloudUrl": f.get('metadata', {}).get('webUrl') if isinstance(f.get('metadata'), dict) else None,
+                "indexed": True
             })
         
+        # Also get sync status to show pending count
+        sync_status = SYNC_MANAGER.get_sync_status()
+        
         files.sort(key=lambda x: x.get("uploadDate", ""), reverse=True)
-        return jsonify({"files": files})
+        return jsonify({
+            "files": files,
+            "syncStatus": sync_status
+        })
     except Exception as e:
         app.logger.error(f"Failed to fetch files: {e}")
-        return jsonify({"files": []})
+        return jsonify({"files": [], "syncStatus": {}})
 
 
 @app.route("/api/upload", methods=["POST"])

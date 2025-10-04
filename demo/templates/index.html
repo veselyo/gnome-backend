@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -129,7 +130,8 @@
             .header {
                 left: 240px;
                 padding: 0 20px;
-                min-width: 700px; /* Maintain minimum size even on mobile */
+                min-width: 700px;
+                /* Maintain minimum size even on mobile */
             }
 
             .content-area {
@@ -509,6 +511,7 @@
                 transform: translateX(100%);
                 opacity: 0;
             }
+
             to {
                 transform: translateX(0);
                 opacity: 1;
@@ -526,7 +529,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .relevance-badge {
@@ -641,19 +646,23 @@
         }
     </style>
 </head>
+
 <body>
     {% raw %}
     <div id="app">
         <div class="app-container">
             <!-- Sidebar -->
             <div class="sidebar">
-                <div class="nav-item" :class="{ active: currentView === 'files' }" @click="currentView = 'files'; clearSearch()">
+                <div class="nav-item" :class="{ active: currentView === 'files' }"
+                    @click="currentView = 'files'; clearSearch()">
                     Recent
                 </div>
-                <div class="nav-item" :class="{ active: currentView === 'applications' }" @click="currentView = 'applications'; clearSearch()">
+                <div class="nav-item" :class="{ active: currentView === 'applications' }"
+                    @click="currentView = 'applications'; clearSearch()">
                     All Files
                 </div>
-                <div class="nav-item" :class="{ active: currentView === 'settings' }" @click="currentView = 'settings'; clearSearch()">
+                <div class="nav-item" :class="{ active: currentView === 'settings' }"
+                    @click="currentView = 'settings'; clearSearch()">
                     Settings
                 </div>
             </div>
@@ -668,41 +677,28 @@
                     <!-- Search Bar -->
                     <div class="search-container">
                         <div class="search-input-wrapper">
-                            <svg class="search-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="search-icon" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <path d="m21 21-4.35-4.35"></path>
                             </svg>
-                            <input
-                                type="text"
-                                class="search-input"
-                                placeholder="Search by meaning"
-                                v-model="searchQuery"
-                                @keyup.enter="performSearch"
-                            >
+                            <input type="text" class="search-input" placeholder="Search by meaning"
+                                v-model="searchQuery" @keyup.enter="performSearch">
                         </div>
                     </div>
 
                     <div class="header-actions">
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <input
-                                type="file"
-                                ref="fileInput"
-                                class="file-input"
-                                accept=".pdf"
-                                @change="handleFileUpload"
-                            >
-                            <button
-                                class="btn-primary"
-                                :class="{ 'drag-over': isButtonDragOver }"
-                                @click="$refs.fileInput.click()"
-                                @drop.prevent="handleButtonDrop"
+                            <input type="file" ref="fileInput" class="file-input" accept=".pdf"
+                                @change="handleFileUpload">
+                            <button class="btn-primary" :class="{ 'drag-over': isButtonDragOver }"
+                                @click="$refs.fileInput.click()" @drop.prevent="handleButtonDrop"
                                 @dragover.prevent="isButtonDragOver = true"
                                 @dragleave.prevent="isButtonDragOver = false"
-                                @dragenter.prevent="isButtonDragOver = true"
-                                :disabled="uploading"
-                            >
+                                @dragenter.prevent="isButtonDragOver = true" :disabled="uploading">
                                 <span v-if="!uploading">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                         <polyline points="17 8 12 3 7 8"></polyline>
                                         <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -731,30 +727,28 @@
                     <!-- Settings View -->
                     <div v-if="currentView === 'settings'" class="settings-view">
                         <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Connected Sources</h2>
-                        
-                        <div class="source-card" v-for="app in applications" :key="app.name" 
-                             style="background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+
+                        <div class="source-card" v-for="app in applications" :key="app.name"
+                            style="background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                             <div style="display: flex; align-items: center; gap: 16px;">
-                                <div class="app-icon" :style="{ backgroundImage: app.icon, width: '48px', height: '48px' }"></div>
+                                <div class="app-icon"
+                                    :style="{ backgroundImage: app.icon, width: '48px', height: '48px' }"></div>
                                 <div>
                                     <div style="font-weight: 600; font-size: 18px;">{{ app.name }}</div>
                                     <div style="color: #637282; font-size: 14px;" v-if="app.connected">Connected ✓</div>
                                     <div style="color: #637282; font-size: 14px;" v-else>Not connected</div>
                                 </div>
                             </div>
-                            <button v-if="!app.connected && app.name !== 'Finder'" 
-                                    @click="connectSource(app.name)"
-                                    class="btn-secondary"
-                                    style="padding: 10px 20px; font-size: 14px;">
+                            <button v-if="!app.connected && app.name !== 'Finder'" @click="connectSource(app.name)"
+                                class="btn-secondary" style="padding: 10px 20px; font-size: 14px;">
                                 Connect
                             </button>
-                            <button v-if="app.connected && app.name !== 'Finder'" 
-                                    @click="disconnectSource(app.name)"
-                                    style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                            <button v-if="app.connected && app.name !== 'Finder'" @click="disconnectSource(app.name)"
+                                style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                                 Disconnect
                             </button>
                         </div>
-                        
+
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
                             Sync All Sources Now
                         </button>
@@ -762,19 +756,23 @@
 
                     <!-- Applications Grid -->
                     <div v-if="currentView === 'applications'" class="applications-grid">
-                        <div v-for="app in applicationsWithCounts" :key="app.name" class="app-card" @click="viewAppFiles(app)">
+                        <div v-for="app in applicationsWithCounts" :key="app.name" class="app-card"
+                            @click="viewAppFiles(app)">
                             <div class="app-icon" :style="{ backgroundImage: app.icon }"></div>
                             <div class="app-name">{{ app.name }}</div>
-                            <div class="app-files-count">{{ app.fileCount }} {{ app.fileCount === 1 ? 'file' : 'files' }}</div>
+                            <div class="app-files-count">{{ app.fileCount }} {{ app.fileCount === 1 ? 'file' : 'files'
+                                }}</div>
                         </div>
                     </div>
 
                     <!-- File Table -->
-                    <div v-if="currentView !== 'applications' && displayFiles.length > 0" class="file-table" :class="{ 'app-files-view': currentView === 'app-files' }">
+                    <div v-if="currentView !== 'applications' && displayFiles.length > 0" class="file-table"
+                        :class="{ 'app-files-view': currentView === 'app-files' }">
                         <div class="file-table-header">
                             <div class="col-name">Name</div>
                             <div class="col-date">Modified</div>
-                            <div v-if="currentView === 'files' || currentView === 'search'" class="col-application">Location</div>
+                            <div v-if="currentView === 'files' || currentView === 'search'" class="col-application">
+                                Location</div>
                         </div>
                         <div v-for="file in displayFiles" :key="file.name" class="file-table-row">
                             <div class="col-name">
@@ -798,7 +796,8 @@
                     <div v-else-if="currentView === 'app-files' && !loading" class="empty-state">
                         <div class="empty-state-icon">📁</div>
                         <div class="empty-state-title">No files in {{ selectedApp?.name }}</div>
-                        <div class="empty-state-text">Files will appear here when they are assigned to this application</div>
+                        <div class="empty-state-text">Files will appear here when they are assigned to this application
+                        </div>
                     </div>
 
                     <div v-else-if="currentView === 'search' && searchPerformed && !loading" class="empty-state">
@@ -874,7 +873,7 @@
                     return this.applications.map(app => {
                         // Count files from this source
                         const fileCount = this.files.filter(file => file.source === app.name).length;
-                        
+
                         return {
                             ...app,
                             fileCount: fileCount
@@ -920,10 +919,28 @@
                         const response = await fetch('/api/files');
                         const data = await response.json();
                         this.files = data.files || [];
+                        
+                        // Update connection status from sync state
+                        if (data.syncStatus) {
+                            this.applications.forEach(app => {
+                                const syncState = data.syncStatus[app.name];
+                                if (syncState && syncState.status !== 'never_synced') {
+                                    app.connected = true;
+                                }
+                                // Show sync progress
+                                if (syncState && syncState.status === 'syncing') {
+                                    this.loadingMessage = `Syncing ${app.name}...`;
+                                }
+                            });
+                        }
                     } catch (error) {
                         this.showToast('Error loading files', 'error');
                     } finally {
-                        this.loading = false;
+                        // Keep showing sync status if still syncing
+                        const anySyncing = this.applications.some(app => 
+                            data?.syncStatus?.[app.name]?.status === 'syncing'
+                        );
+                        this.loading = anySyncing;
                     }
                 },
 
@@ -1058,13 +1075,21 @@
                 },
 
                 handleFileClick(file) {
+                    // Check if file is still being indexed
+                    if (!file.indexed) {
+                        this.showToast('File is still being indexed...', 'info');
+                        return;
+                    }
+                    
                     // Open file in appropriate app
                     if (file.source === 'Finder') {
                         // Open local file
                         window.location.href = `/api/open-file/${encodeURIComponent(file.name)}`;
-                    } else {
+                    } else if (file.cloudUrl) {
                         // Open cloud file in browser
-                        window.open(file.cloudUrl || '#', '_blank');
+                        window.open(file.cloudUrl, '_blank');
+                    } else {
+                        this.showToast('File location unavailable', 'error');
                     }
                 },
 
@@ -1073,10 +1098,10 @@
                     this.loadingMessage = `Connecting to ${sourceName}...`;
 
                     try {
-                        const endpoint = sourceName === 'Google Drive' 
+                        const endpoint = sourceName === 'Google Drive'
                             ? '/api/connect/google-drive'
                             : '/api/connect/onedrive';
-                        
+
                         const response = await fetch(endpoint, { method: 'POST' });
                         const data = await response.json();
 
@@ -1142,4 +1167,5 @@
         }).mount('#app');
     </script>
 </body>
+
 </html>
