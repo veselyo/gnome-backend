@@ -4,3 +4,17 @@ pinecone
 PyMuPDF
 Pillow
 python-dotenv
+# Google Drive sync
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+# OneDrive sync
+msal
+requests
+# Multi-format support
+pytesseract
+python-docx
+python-pptx
+openpyxl
+# Database
+# watchdog (real-time file watching)

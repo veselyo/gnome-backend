@@ -21,6 +21,10 @@ from semantic_search.vector_database import (
     store_embeddings,
     semantic_search,
 )
+from semantic_search.file_processor import process_file, is_supported_file
+from database.models import GnomeDatabase
+from sync_engine.sync_manager import SyncManager
+import subprocess
 
 # Flask setup
 app = Flask(__name__)
@@ -37,6 +41,13 @@ VOYAGE_CLIENT = init_voyage()
 PINECONE_IDX = init_pinecone_idx()
 NAMESPACE = "demo"
 
+# Initialize database and sync manager
+DB = GnomeDatabase()
+SYNC_MANAGER = SyncManager(DB, VOYAGE_CLIENT, PINECONE_IDX, NAMESPACE)
+
+# Start auto-sync in background
+SYNC_MANAGER.start_auto_sync()
+
 
 @app.route("/")
 def index():
@@ -46,13 +57,25 @@ def index():
 
 @app.route("/api/files")
 def api_files():
-    """API endpoint to get list of uploaded files."""
-    files = [
-        {"name": f.name, "uploadDate": f.stat().st_mtime * 1000}
-        for f in UPLOAD_FOLDER.glob("*.pdf")
-    ]
-    files.sort(key=lambda x: x["uploadDate"], reverse=True)
-    return jsonify({"files": files})
+    """API endpoint to get list of all indexed files from all sources."""
+    try:
+        db_files = SYNC_MANAGER.get_all_files()
+        
+        files = []
+        for f in db_files:
+            files.append({
+                "name": f['filename'],
+                "uploadDate": f.get('indexed_at'),
+                "source": f['source'],
+                "size": f.get('file_size'),
+                "cloudUrl": f.get('metadata', {}).get('webUrl') if isinstance(f.get('metadata'), dict) else None
+            })
+        
+        files.sort(key=lambda x: x.get("uploadDate", ""), reverse=True)
+        return jsonify({"files": files})
+    except Exception as e:
+        app.logger.error(f"Failed to fetch files: {e}")
+        return jsonify({"files": []})
 
 
 @app.route("/api/upload", methods=["POST"])
@@ -112,8 +135,102 @@ def api_search():
         return jsonify({"error": f"Search failed: {exc}"}), 500
 
 
+@app.route("/api/sync", methods=["POST"])
+def api_sync():
+    """API endpoint to trigger manual sync."""
+    data = request.get_json() or {}
+    source = data.get("source")  # Optional: sync specific source
+    
+    try:
+        if source:
+            result = SYNC_MANAGER.sync_source(source)
+            return jsonify({"message": f"Synced {source}", "result": result}), 200
+        else:
+            results = SYNC_MANAGER.sync_all()
+            return jsonify({"message": "Synced all sources", "results": results}), 200
+    except Exception as exc:
+        app.logger.error(f"Sync failed: {exc}")
+        return jsonify({"error": f"Sync failed: {exc}"}), 500
+
+
+@app.route("/api/sync/status")
+def api_sync_status():
+    """Get sync status for all sources."""
+    try:
+        status = SYNC_MANAGER.get_sync_status()
+        return jsonify({"status": status}), 200
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/connect/google-drive", methods=["POST"])
+def api_connect_gdrive():
+    """Initiate Google Drive OAuth connection."""
+    try:
+        success = SYNC_MANAGER.connect_google_drive()
+        if success:
+            return jsonify({"message": "Google Drive connected successfully"}), 200
+        else:
+            return jsonify({"error": "Failed to connect Google Drive"}), 500
+    except Exception as exc:
+        app.logger.error(f"Google Drive connection failed: {exc}")
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/connect/onedrive", methods=["POST"])
+def api_connect_onedrive():
+    """Initiate OneDrive OAuth connection."""
+    try:
+        success = SYNC_MANAGER.connect_onedrive()
+        if success:
+            return jsonify({"message": "OneDrive connected successfully"}), 200
+        else:
+            return jsonify({"error": "Failed to connect OneDrive"}), 500
+    except Exception as exc:
+        app.logger.error(f"OneDrive connection failed: {exc}")
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/disconnect/<source>", methods=["POST"])
+def api_disconnect(source):
+    """Disconnect a cloud source."""
+    try:
+        SYNC_MANAGER.disconnect_source(source)
+        return jsonify({"message": f"{source} disconnected"}), 200
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/open-file/<filename>")
+def api_open_file(filename):
+    """Open a local file in Finder."""
+    try:
+        # Get file from database
+        files = SYNC_MANAGER.get_all_files()
+        file_info = next((f for f in files if f['filename'] == filename and f['source'] == 'Finder'), None)
+        
+        if not file_info:
+            return jsonify({"error": "File not found"}), 404
+        
+        file_path = file_info['file_path']
+        
+        # Open file in default app (macOS)
+        subprocess.run(['open', file_path], check=True)
+        
+        return jsonify({"message": "File opened"}), 200
+    except Exception as exc:
+        app.logger.error(f"Failed to open file: {exc}")
+        return jsonify({"error": str(exc)}), 500
+
+
 if __name__ == "__main__":
     # Disable debug mode when running from Electron to avoid restart issues
     import sys
     debug_mode = '--debug' in sys.argv
-    app.run(debug=debug_mode, host="0.0.0.0", port=5001)
+    
+    try:
+        app.run(debug=debug_mode, host="0.0.0.0", port=5001)
+    finally:
+        # Cleanup on shutdown
+        SYNC_MANAGER.stop_auto_sync()
+        DB.close()

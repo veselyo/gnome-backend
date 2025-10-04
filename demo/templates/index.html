@@ -653,6 +653,9 @@
                 <div class="nav-item" :class="{ active: currentView === 'applications' }" @click="currentView = 'applications'; clearSearch()">
                     All Files
                 </div>
+                <div class="nav-item" :class="{ active: currentView === 'settings' }" @click="currentView = 'settings'; clearSearch()">
+                    Settings
+                </div>
             </div>
 
             <!-- Main Content -->
@@ -723,6 +726,38 @@
                                 <h2 class="app-title">{{ selectedApp.name }}</h2>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Settings View -->
+                    <div v-if="currentView === 'settings'" class="settings-view">
+                        <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Connected Sources</h2>
+                        
+                        <div class="source-card" v-for="app in applications" :key="app.name" 
+                             style="background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div class="app-icon" :style="{ backgroundImage: app.icon, width: '48px', height: '48px' }"></div>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 18px;">{{ app.name }}</div>
+                                    <div style="color: #637282; font-size: 14px;" v-if="app.connected">Connected ✓</div>
+                                    <div style="color: #637282; font-size: 14px;" v-else>Not connected</div>
+                                </div>
+                            </div>
+                            <button v-if="!app.connected && app.name !== 'Finder'" 
+                                    @click="connectSource(app.name)"
+                                    class="btn-secondary"
+                                    style="padding: 10px 20px; font-size: 14px;">
+                                Connect
+                            </button>
+                            <button v-if="app.connected && app.name !== 'Finder'" 
+                                    @click="disconnectSource(app.name)"
+                                    style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                                Disconnect
+                            </button>
+                        </div>
+                        
+                        <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
+                            Sync All Sources Now
+                        </button>
                     </div>
 
                     <!-- Applications Grid -->
@@ -813,17 +848,9 @@
                     isDragging: false,
                     isButtonDragOver: false,
                     applications: [
-                        { name: 'AWS', icon: 'url("/static/app_icons/aws_icon.png")' },
-                        { name: 'Dropbox', icon: 'url("/static/app_icons/dropbox_icon.png")' },
-                        { name: 'Finder', icon: 'url("/static/app_icons/finder_icon.png")' },
-                        { name: 'GitHub', icon: 'url("/static/app_icons/github_icon.png")' },
-                        { name: 'Gmail', icon: 'url("/static/app_icons/gmail_icon.png")' },
-                        { name: 'Google Drive', icon: 'url("/static/app_icons/gdrive_icon.png")' },
-                        { name: 'Notion', icon: 'url("/static/app_icons/notion_icon.png")' },
-                        { name: 'OneDrive', icon: 'url("/static/app_icons/onedrive_icon.png")' },
-                        { name: 'Outlook', icon: 'url("/static/app_icons/outlook_icon.png")' },
-                        { name: 'iCloud Drive', icon: 'url("/static/app_icons/idrive_icon.png")' },
-                        { name: 'iCloud Mail', icon: 'url("/static/app_icons/imail_icon.png")' }
+                        { name: 'Finder', icon: 'url("/static/app_icons/finder_icon.png")', connected: true },
+                        { name: 'Google Drive', icon: 'url("/static/app_icons/gdrive_icon.png")', connected: false },
+                        { name: 'OneDrive', icon: 'url("/static/app_icons/onedrive_icon.png")', connected: false }
                     ],
                     toast: {
                         visible: false,
@@ -838,48 +865,16 @@
                         return this.searchResults;
                     }
                     if (this.currentView === 'app-files' && this.selectedApp) {
-                        // Filter files for the selected application
-                        return this.files.filter(file => {
-                            const storageApps = ['Google Drive', 'Dropbox', 'iCloud Drive', 'OneDrive', 'Finder'];
-                            if (!file.assignedApp && storageApps.includes(this.selectedApp.name)) {
-                                // Specific files should be assigned to Finder
-                                if (file.name === 'forgot_to_rename.pdf' || file.name === '37289132442.pdf') {
-                                    file.assignedApp = 'Finder';
-                                } else {
-                                    const hash = this.hashString(file.name);
-                                    const storageAppIndex = hash % storageApps.length;
-                                    file.assignedApp = storageApps[storageAppIndex];
-                                }
-                            }
-                            return file.assignedApp === this.selectedApp.name;
-                        });
+                        // Filter files by source (from backend)
+                        return this.files.filter(file => file.source === this.selectedApp.name);
                     }
                     return this.files;
                 },
                 applicationsWithCounts() {
-                    const storageApps = ['Google Drive', 'Dropbox', 'iCloud Drive', 'OneDrive', 'Finder'];
-
                     return this.applications.map(app => {
-                        let fileCount = 0;
-
-                        if (storageApps.includes(app.name)) {
-                            // Distribute files among storage applications
-                            fileCount = this.files.filter(file => {
-                                if (!file.assignedApp) {
-                                    // Specific files should be assigned to Finder
-                                    if (file.name === 'forgot_to_rename.pdf' || file.name === '37289132442.pdf') {
-                                        file.assignedApp = 'Finder';
-                                    } else {
-                                        // Assign files to storage apps based on hash of filename
-                                        const hash = this.hashString(file.name);
-                                        const storageAppIndex = hash % storageApps.length;
-                                        file.assignedApp = storageApps[storageAppIndex];
-                                    }
-                                }
-                                return file.assignedApp === app.name;
-                            }).length;
-                        }
-
+                        // Count files from this source
+                        const fileCount = this.files.filter(file => file.source === app.name).length;
+                        
                         return {
                             ...app,
                             fileCount: fileCount
@@ -902,29 +897,14 @@
                 },
 
                 getAppIcon(file) {
-                    const storageApps = ['Google Drive', 'Dropbox', 'iCloud Drive', 'OneDrive', 'Finder'];
-
-                    // Ensure file has an assigned app (same logic as in computed property)
-                    if (!file.assignedApp) {
-                        // Specific files should be assigned to Finder
-                        if (file.name === 'forgot_to_rename.pdf' || file.name === '37289132442.pdf') {
-                            file.assignedApp = 'Finder';
-                        } else {
-                            const hash = this.hashString(file.name);
-                            const storageAppIndex = hash % storageApps.length;
-                            file.assignedApp = storageApps[storageAppIndex];
-                        }
-                    }
-
-                    // Find the app and return its icon
-                    const app = this.applications.find(app => app.name === file.assignedApp);
-                    return app ? app.icon : 'url("/static/finder_logo.png")';
+                    // Find the app by source and return its icon
+                    const app = this.applications.find(app => app.name === file.source);
+                    return app ? app.icon : 'url("/static/app_icons/finder_icon.png")';
                 },
 
                 viewAppFiles(app) {
-                    // Only show files for storage applications that actually have files
-                    const storageApps = ['Google Drive', 'Dropbox', 'iCloud Drive', 'OneDrive', 'Finder'];
-                    if (storageApps.includes(app.name) && app.fileCount > 0) {
+                    // View files from any source
+                    if (app.fileCount > 0) {
                         this.selectedApp = app;
                         this.currentView = 'app-files';
                         this.searchQuery = '';
@@ -1078,8 +1058,85 @@
                 },
 
                 handleFileClick(file) {
-                    // Empty click handler - does nothing but provides clickable feedback
-                    console.log('File clicked:', file.name);
+                    // Open file in appropriate app
+                    if (file.source === 'Finder') {
+                        // Open local file
+                        window.location.href = `/api/open-file/${encodeURIComponent(file.name)}`;
+                    } else {
+                        // Open cloud file in browser
+                        window.open(file.cloudUrl || '#', '_blank');
+                    }
+                },
+
+                async connectSource(sourceName) {
+                    this.loading = true;
+                    this.loadingMessage = `Connecting to ${sourceName}...`;
+
+                    try {
+                        const endpoint = sourceName === 'Google Drive' 
+                            ? '/api/connect/google-drive'
+                            : '/api/connect/onedrive';
+                        
+                        const response = await fetch(endpoint, { method: 'POST' });
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            this.showToast(data.message, 'success');
+                            // Update connection status
+                            const app = this.applications.find(a => a.name === sourceName);
+                            if (app) app.connected = true;
+                            // Trigger sync
+                            this.triggerSync();
+                        } else {
+                            this.showToast(data.error || 'Connection failed', 'error');
+                        }
+                    } catch (error) {
+                        this.showToast(`Error connecting to ${sourceName}`, 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async disconnectSource(sourceName) {
+                    try {
+                        const response = await fetch(`/api/disconnect/${encodeURIComponent(sourceName)}`, { method: 'POST' });
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            this.showToast(data.message, 'success');
+                            const app = this.applications.find(a => a.name === sourceName);
+                            if (app) app.connected = false;
+                        } else {
+                            this.showToast(data.error || 'Disconnect failed', 'error');
+                        }
+                    } catch (error) {
+                        this.showToast(`Error disconnecting ${sourceName}`, 'error');
+                    }
+                },
+
+                async triggerSync() {
+                    this.loading = true;
+                    this.loadingMessage = 'Syncing all sources...';
+
+                    try {
+                        const response = await fetch('/api/sync', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            this.showToast('Sync completed!', 'success');
+                            // Refresh file list
+                            await this.fetchFiles();
+                        } else {
+                            this.showToast(data.error || 'Sync failed', 'error');
+                        }
+                    } catch (error) {
+                        this.showToast('Error syncing sources', 'error');
+                    } finally {
+                        this.loading = false;
+                    }
                 }
             }
         }).mount('#app');
