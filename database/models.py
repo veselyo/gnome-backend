@@ -93,14 +93,15 @@ class GnomeDatabase:
                  file_hash: str, pinecone_id: str, file_size: int = None,
                  metadata: dict = None) -> int:
         """Add a new file to the database."""
+        import json
         cursor = self.conn.cursor()
         cursor.execute('''
-            INSERT INTO files (filename, file_path, source, file_hash, pinecone_id, 
+            INSERT OR IGNORE INTO files (filename, file_path, source, file_hash, pinecone_id, 
                              file_size, last_modified, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (filename, file_path, source, file_hash, pinecone_id, 
               file_size, datetime.now().isoformat(),
-              str(metadata) if metadata else None))
+              json.dumps(metadata) if metadata else None))
         self.conn.commit()
         return cursor.lastrowid
     
@@ -124,13 +125,24 @@ class GnomeDatabase:
     
     def get_all_files(self) -> List[Dict]:
         """Get all active files."""
+        import json
         cursor = self.conn.cursor()
         cursor.execute('''
             SELECT * FROM files 
             WHERE is_deleted = 0 
             ORDER BY last_modified DESC
         ''')
-        return [dict(row) for row in cursor.fetchall()]
+        files = []
+        for row in cursor.fetchall():
+            file_dict = dict(row)
+            # Parse metadata JSON if present
+            if file_dict.get('metadata'):
+                try:
+                    file_dict['metadata'] = json.loads(file_dict['metadata'])
+                except:
+                    file_dict['metadata'] = {}
+            files.append(file_dict)
+        return files
     
     def mark_file_deleted(self, file_id: int):
         """Mark a file as deleted (soft delete)."""

@@ -26,17 +26,17 @@ class OneDriveSyncEngine(BaseSyncEngine):
             True if authentication successful
         """
         try:
-            import msal
-            import os
-            
             CLIENT_ID = os.environ.get('MICROSOFT_CLIENT_ID')
             CLIENT_SECRET = os.environ.get('MICROSOFT_CLIENT_SECRET')
-            AUTHORITY = 'https://login.microsoftonline.com/common'
-            SCOPES = ['Files.Read.All', 'offline_access']
             
             if not CLIENT_ID or not CLIENT_SECRET:
-                self.logger.error("Microsoft OAuth credentials not configured")
+                self.logger.warning("Microsoft OAuth not configured (MICROSOFT_CLIENT_ID/SECRET missing)")
                 return False
+                
+            import msal
+            
+            AUTHORITY = 'https://login.microsoftonline.com/common'
+            SCOPES = ['Files.Read.All', 'offline_access']
             
             # Check if we have stored tokens
             token_data = self.db.get_oauth_token('onedrive')
@@ -78,15 +78,21 @@ class OneDriveSyncEngine(BaseSyncEngine):
             if 'access_token' in result:
                 self.access_token = result['access_token']
                 self.save_tokens(result)
-                self.logger.info("OneDrive authentication successful")
+                self.logger.info("✅ OneDrive authentication successful")
                 return True
             else:
-                self.logger.error(f"Authentication failed: {result.get('error_description')}")
+                self.logger.error(f"❌ Authentication failed: {result.get('error_description')}")
                 return False
                 
         except Exception as e:
-            self.logger.error(f"OneDrive authentication failed: {e}")
+            self.logger.error(f"❌ OneDrive authentication failed: {e}")
             return False
+    
+    def is_authenticated(self) -> bool:
+        """Check if OneDrive is authenticated."""
+        # Check if we have tokens
+        token_data = self.db.get_oauth_token('onedrive')
+        return token_data is not None or self.access_token is not None
     
     def save_tokens(self, token_response: Dict):
         """Save OAuth tokens to database."""

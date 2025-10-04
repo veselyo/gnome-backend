@@ -112,10 +112,10 @@ def api_upload():
 
 @app.route("/api/search", methods=["POST"])
 def api_search():
-    """API endpoint for semantic search."""
+    """API endpoint for semantic search across all sources."""
     data = request.get_json()
     query = data.get("query", "").strip() if data else ""
-    top_k = data.get("top_k", 5) if data else 5
+    top_k = data.get("top_k", 10) if data else 10
 
     if not query:
         return jsonify({"error": "Please enter a query."}), 400
@@ -127,15 +127,26 @@ def api_search():
         # Pinecone returns dict with "matches"
         matches = response.get("matches", [])
 
-        # Format results for frontend
-        results = [
-            {
-                "name": match.get("id", "Unknown"),
+        # Format results with metadata from Pinecone
+        results = []
+        for match in matches:
+            metadata = match.get("metadata", {})
+            result = {
+                "name": metadata.get("filename", "Unknown"),
                 "similarity": match.get("score", 0),
-                "uploadDate": None  # Can be enhanced later
+                "source": metadata.get("source", "Unknown"),
+                "cloudUrl": metadata.get('webUrl'),
+                "file_path": metadata.get('file_path'),
+                "indexed": True
             }
-            for match in matches
-        ]
+            
+            # Get upload date from database if available
+            db_files = SYNC_MANAGER.get_all_files()
+            db_file = next((f for f in db_files if f['filename'] == result['name']), None)
+            if db_file:
+                result['uploadDate'] = db_file.get('indexed_at')
+            
+            results.append(result)
 
         return jsonify({"results": results}), 200
     except Exception as exc:  # pylint: disable=broad-except
@@ -163,10 +174,38 @@ def api_sync():
 
 @app.route("/api/sync/status")
 def api_sync_status():
-    """Get sync status for all sources."""
+    """Get sync status and file counts for all sources."""
     try:
         status = SYNC_MANAGER.get_sync_status()
+        
+        # Add file counts per source
+        for source in ['Finder', 'Google Drive', 'OneDrive']:
+            indexed_count = len(SYNC_MANAGER.get_files_by_source(source))
+            if source in status:
+                status[source]['indexed_count'] = indexed_count
+        
         return jsonify({"status": status}), 200
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/discover", methods=["POST"])
+def api_discover():
+    """Quick file discovery - just count files without indexing."""
+    data = request.get_json() or {}
+    source = data.get("source", "Finder")
+    
+    try:
+        if source == "Finder":
+            engine = SYNC_MANAGER.engines['Finder']
+            files = engine.fetch_files()
+            return jsonify({
+                "source": source,
+                "total_files": len(files),
+                "indexed": len(SYNC_MANAGER.get_files_by_source(source))
+            }), 200
+        else:
+            return jsonify({"error": "Discovery only supported for Finder"}), 400
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
 

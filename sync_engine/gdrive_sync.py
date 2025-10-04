@@ -25,6 +25,14 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
             True if authentication successful
         """
         try:
+            # Check if OAuth is configured
+            client_id = os.environ.get('GOOGLE_CLIENT_ID')
+            client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+            
+            if not client_id or not client_secret:
+                self.logger.warning("Google OAuth not configured (GOOGLE_CLIENT_ID/SECRET missing)")
+                return False
+            
             from google.auth.transport.requests import Request
             from google.oauth2.credentials import Credentials
             from google_auth_oauthlib.flow import InstalledAppFlow
@@ -41,8 +49,8 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
                     token=token_data['access_token'],
                     refresh_token=token_data['refresh_token'],
                     token_uri='https://oauth2.googleapis.com/token',
-                    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
-                    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
+                    client_id=client_id,
+                    client_secret=client_secret,
                     scopes=SCOPES
                 )
                 
@@ -52,11 +60,12 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
                     self.save_tokens()
             else:
                 # No tokens - need to authenticate
+                self.logger.info("Opening browser for Google Drive authentication...")
                 flow = InstalledAppFlow.from_client_config(
                     {
                         "installed": {
-                            "client_id": os.environ.get('GOOGLE_CLIENT_ID'),
-                            "client_secret": os.environ.get('GOOGLE_CLIENT_SECRET'),
+                            "client_id": client_id,
+                            "client_secret": client_secret,
                             "redirect_uris": ["http://localhost:8080/"],
                             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                             "token_uri": "https://oauth2.googleapis.com/token"
@@ -69,12 +78,18 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
             
             # Build Drive service
             self.service = build('drive', 'v3', credentials=self.credentials)
-            self.logger.info("Google Drive authentication successful")
+            self.logger.info("✅ Google Drive authentication successful")
             return True
             
         except Exception as e:
-            self.logger.error(f"Google Drive authentication failed: {e}")
+            self.logger.error(f"❌ Google Drive authentication failed: {e}")
             return False
+    
+    def is_authenticated(self) -> bool:
+        """Check if Google Drive is authenticated."""
+        # Check if we have tokens
+        token_data = self.db.get_oauth_token('google_drive')
+        return token_data is not None or self.service is not None
     
     def save_tokens(self):
         """Save OAuth tokens to database."""

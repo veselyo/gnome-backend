@@ -41,6 +41,7 @@ class SyncManager:
         self.is_syncing = False
         self.sync_interval = 300  # 5 minutes
         self.sync_thread = None
+        self.max_files_per_sync = 50  # Process 50 files per sync for faster UI updates
     
     def sync_all(self) -> Dict[str, Dict]:
         """
@@ -65,11 +66,12 @@ class SyncManager:
                     results[source_name] = {'error': 'Not authenticated'}
                     continue
                 
-                # Run sync
+                # Run sync with file limit for faster iterations
                 result = engine.sync(
                     self.voyage_client,
                     self.pinecone_idx,
-                    self.namespace
+                    self.namespace,
+                    max_files=self.max_files_per_sync
                 )
                 results[source_name] = result
                 
@@ -139,13 +141,37 @@ class SyncManager:
     
     def connect_google_drive(self) -> bool:
         """Initiate Google Drive OAuth connection."""
-        engine = self.engines['Google Drive']
-        return engine.authenticate()
+        try:
+            engine = self.engines['Google Drive']
+            success = engine.authenticate()
+            if success:
+                # Trigger immediate sync after connection
+                logger.info("Google Drive connected, starting sync...")
+                threading.Thread(
+                    target=lambda: engine.sync(self.voyage_client, self.pinecone_idx, self.namespace, max_files=20),
+                    daemon=True
+                ).start()
+            return success
+        except Exception as e:
+            logger.error(f"Google Drive connection failed: {e}")
+            return False
     
     def connect_onedrive(self) -> bool:
         """Initiate OneDrive OAuth connection."""
-        engine = self.engines['OneDrive']
-        return engine.authenticate()
+        try:
+            engine = self.engines['OneDrive']
+            success = engine.authenticate()
+            if success:
+                # Trigger immediate sync after connection
+                logger.info("OneDrive connected, starting sync...")
+                threading.Thread(
+                    target=lambda: engine.sync(self.voyage_client, self.pinecone_idx, self.namespace, max_files=20),
+                    daemon=True
+                ).start()
+            return success
+        except Exception as e:
+            logger.error(f"OneDrive connection failed: {e}")
+            return False
     
     def disconnect_source(self, source_name: str):
         """Disconnect a cloud source."""
