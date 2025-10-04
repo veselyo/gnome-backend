@@ -113,4 +113,7 @@ def api_search():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5001)
+    # Disable debug mode when running from Electron to avoid restart issues
+    import sys
+    debug_mode = '--debug' in sys.argv
+    app.run(debug=debug_mode, host="0.0.0.0", port=5001)
