@@ -23,6 +23,7 @@ from semantic_search.vector_database import (
     semantic_search,
 )
 from semantic_search.file_processor import process_file, is_supported_file
+from semantic_search.hybrid_search import hybrid_search_rerank, boost_exact_matches, filter_by_relevance
 from database.models import GnomeDatabase
 from sync_engine.sync_manager import SyncManager
 import subprocess
@@ -113,19 +114,19 @@ def api_upload():
 
 @app.route("/api/search", methods=["POST"])
 def api_search():
-    """API endpoint for semantic search across all sources."""
+    """API endpoint for hybrid semantic + keyword search across all sources."""
     data = request.get_json()
     query = data.get("query", "").strip() if data else ""
-    top_k = data.get("top_k", 10) if data else 10
+    top_k = data.get("top_k", 30) if data else 30  # Get more results for reranking
 
     if not query:
         return jsonify({"error": "Please enter a query."}), 400
 
     try:
+        # Step 1: Semantic search via Pinecone
         response = semantic_search(
             query, PINECONE_IDX, VOYAGE_CLIENT, top_k, NAMESPACE
         )
-        # Pinecone returns dict with "matches"
         matches = response.get("matches", [])
 
         # Get all files from database for matching
@@ -165,8 +166,22 @@ def api_search():
                 }
             
             results.append(result)
+        
+        # Step 2: Apply hybrid search reranking (semantic + keyword)
+        results = hybrid_search_rerank(query, results, semantic_weight=0.5, keyword_weight=0.5)
+        
+        # Step 3: Boost exact matches in filename
+        results = boost_exact_matches(query, results, boost_factor=0.4)
+        
+        # Step 4: Filter low-relevance results
+        results = filter_by_relevance(results, min_score=0.2)
+        
+        # Step 5: Return top 10 after reranking
+        results = results[:10]
 
+        app.logger.info(f"Search '{query}': {len(results)} results after hybrid reranking")
         return jsonify({"results": results}), 200
+        
     except Exception as exc:  # pylint: disable=broad-except
         app.logger.error("Search failed:\n%s", traceback.format_exc())
         return jsonify({"error": f"Search failed: {exc}"}), 500
