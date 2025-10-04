@@ -1,0 +1,92 @@
+{
+  "name": "gnome",
+  "version": "1.0.0",
+  "description": "Semantic PDF search powered by AI",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build --mac",
+    "build:all": "electron-builder build --mac --win --linux",
+    "pack": "electron-builder --dir"
+  },
+  "keywords": [
+    "pdf",
+    "search",
+    "semantic",
+    "ai"
+  ],
+  "author": "Kenneth Frisard",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.gnom3.gnome",
+    "productName": "Gnome",
+    "files": [
+      "main.js",
+      "preload.js",
+      "icon.png",
+      "../demo/**/*",
+      "../semantic_search/**/*",
+      "../venv/**/*",
+      "../requirements.txt",
+      "!**/{.DS_Store,.git,.gitignore,README.md}"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "darkModeSupport": true
+    },
+    "dmg": {
+      "title": "Gnome Installer",
+      "icon": "icon.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 144,
+          "y": 200,
+          "type": "file"
+        },
+        {
+          "x": 396,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "icon.png"
+    },
+    "directories": {
+      "buildResources": ".",
+      "output": "dist"
+    }
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3"
+  }
+}

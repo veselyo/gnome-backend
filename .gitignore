@@ -1,3 +1,7 @@
 __pycache__/
 .env
 venv/
+node_modules/
+electron/dist/
+electron/.env
+*.log
