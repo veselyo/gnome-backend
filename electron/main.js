@@ -14,7 +14,7 @@ function checkFlaskServer(callback) {
     client.end();
     callback(true);
   });
-  
+
   client.on('error', () => {
     callback(false);
   });
@@ -23,57 +23,56 @@ function checkFlaskServer(callback) {
 // Start Flask backend
 function startFlask() {
   return new Promise((resolve, reject) => {
-    // Check if already running
-    checkFlaskServer((isRunning) => {
-      if (isRunning) {
-        console.log('Flask server already running');
-        resolve();
-        return;
-      }
+    // Path to Python backend (development mode)
+    const pythonPath = path.join(__dirname, '../venv/bin/python3');
+    const appPath = path.join(__dirname, '../demo/app.py');
 
-      // Path to Python backend (development mode)
-      const pythonPath = path.join(__dirname, '../venv/bin/python3');
-      const appPath = path.join(__dirname, '../demo/app.py');
-      
-      // Set environment variables
-      const env = Object.assign({}, process.env, {
-        VOYAGE_API_KEY: process.env.VOYAGE_API_KEY || '',
-        PINECONE_API_KEY: process.env.PINECONE_API_KEY || '',
-        PINECONE_HOST: process.env.PINECONE_HOST || ''
-      });
-
-      console.log('Starting Flask server...');
-      flaskProcess = spawn(pythonPath, [appPath], { env });
-
-      flaskProcess.stdout.on('data', (data) => {
-        console.log(`Flask: ${data}`);
-      });
-
-      flaskProcess.stderr.on('data', (data) => {
-        console.error(`Flask Error: ${data}`);
-      });
-
-      flaskProcess.on('close', (code) => {
-        console.log(`Flask process exited with code ${code}`);
-      });
-
-      // Wait for Flask to be ready (longer timeout for debug mode)
-      let attempts = 0;
-      const maxAttempts = 60; // 30 seconds total
-      const checkInterval = setInterval(() => {
-        checkFlaskServer((isRunning) => {
-          if (isRunning) {
-            clearInterval(checkInterval);
-            console.log('Flask server is ready!');
-            // Wait extra second for Flask debugger to fully load
-            setTimeout(() => resolve(), 1000);
-          } else if (attempts++ > maxAttempts) {
-            clearInterval(checkInterval);
-            reject(new Error('Flask server failed to start'));
-          }
-        });
-      }, 500);
+    // Set environment variables
+    const env = Object.assign({}, process.env, {
+      VOYAGE_API_KEY: process.env.VOYAGE_API_KEY || '',
+      PINECONE_API_KEY: process.env.PINECONE_API_KEY || '',
+      PINECONE_HOST: process.env.PINECONE_HOST || ''
     });
+
+    console.log('Starting Flask server...');
+    flaskProcess = spawn(pythonPath, [appPath], { env });
+
+    let flaskReady = false;
+
+    flaskProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      console.log(`Flask: ${output}`);
+      // Check if Flask says it's running
+      if (output.includes('Running on')) {
+        flaskReady = true;
+      }
+    });
+
+    flaskProcess.stderr.on('data', (data) => {
+      const output = data.toString();
+      console.error(`Flask Error: ${output}`);
+      // Also check stderr for "Running on" message
+      if (output.includes('Running on')) {
+        flaskReady = true;
+      }
+    });
+
+    flaskProcess.on('close', (code) => {
+      console.log(`Flask process exited with code ${code}`);
+      if (!flaskReady) {
+        reject(new Error('Flask exited before starting'));
+      }
+    });
+
+    // Wait 5 seconds for Flask to start
+    setTimeout(() => {
+      if (flaskReady) {
+        console.log('Flask server is ready!');
+        resolve();
+      } else {
+        reject(new Error('Flask server failed to start in time'));
+      }
+    }, 5000);
   });
 }
 
