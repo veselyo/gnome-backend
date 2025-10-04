@@ -33,12 +33,16 @@
       {
         "from": "../demo",
         "to": "app/demo",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "../semantic_search",
         "to": "app/semantic_search",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "../requirements.txt",
@@ -50,6 +54,13 @@
       "icon": "icon.png",
       "target": [
         {
+          "target": "pkg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
           "target": "dmg",
           "arch": [
             "x64",
@@ -58,6 +69,10 @@
         }
       ],
       "darkModeSupport": true
+    },
+    "pkg": {
+      "installLocation": "/Applications",
+      "scripts": "scripts"
     },
     "dmg": {
       "title": "Gnome Installer",
