@@ -57,15 +57,17 @@ function startFlask() {
         console.log(`Flask process exited with code ${code}`);
       });
 
-      // Wait for Flask to be ready
+      // Wait for Flask to be ready (longer timeout for debug mode)
       let attempts = 0;
+      const maxAttempts = 60; // 30 seconds total
       const checkInterval = setInterval(() => {
         checkFlaskServer((isRunning) => {
           if (isRunning) {
             clearInterval(checkInterval);
             console.log('Flask server is ready!');
-            resolve();
-          } else if (attempts++ > 30) {
+            // Wait extra second for Flask debugger to fully load
+            setTimeout(() => resolve(), 1000);
+          } else if (attempts++ > maxAttempts) {
             clearInterval(checkInterval);
             reject(new Error('Flask server failed to start'));
           }
