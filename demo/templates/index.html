@@ -688,26 +688,7 @@
                     </div>
 
                     <div class="header-actions">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <input type="file" ref="fileInput" class="file-input" accept=".pdf"
-                                @change="handleFileUpload">
-                            <button class="btn-primary" :class="{ 'drag-over': isButtonDragOver }"
-                                @click="$refs.fileInput.click()" @drop.prevent="handleButtonDrop"
-                                @dragover.prevent="isButtonDragOver = true"
-                                @dragleave.prevent="isButtonDragOver = false"
-                                @dragenter.prevent="isButtonDragOver = true" :disabled="uploading">
-                                <span v-if="!uploading">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="17 8 12 3 7 8"></polyline>
-                                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                                    </svg>
-                                </span>
-                                <span v-else class="loading-spinner"></span>
-                                {{ uploading ? 'Uploading...' : 'Upload or Drop' }}
-                            </button>
-                        </div>
+                        <!-- Files sync automatically from connected sources -->
                     </div>
                 </div>
 
@@ -1084,7 +1065,7 @@
                     }, 3000);
                 },
 
-                handleFileClick(file) {
+                async handleFileClick(file) {
                     // Check if file is still being indexed
                     if (!file.indexed) {
                         this.showToast('File is still being indexed...', 'info');
@@ -1093,11 +1074,17 @@
                     
                     // Open file in appropriate app
                     if (file.source === 'Finder') {
-                        // Open local file
-                        window.location.href = `/api/open-file/${encodeURIComponent(file.name)}`;
+                        // Open local file via API (keeps Gnome open)
+                        try {
+                            await fetch(`/api/open-file/${encodeURIComponent(file.name)}`);
+                            this.showToast(`Opened ${file.name}`, 'success');
+                        } catch (error) {
+                            this.showToast('Failed to open file', 'error');
+                        }
                     } else if (file.cloudUrl) {
-                        // Open cloud file in browser
+                        // Open cloud file in browser (new tab)
                         window.open(file.cloudUrl, '_blank');
+                        this.showToast(`Opening in browser...`, 'success');
                     } else {
                         this.showToast('File location unavailable', 'error');
                     }

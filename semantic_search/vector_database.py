@@ -74,7 +74,7 @@ def semantic_search(
             namespace=namespace,
             vector=query_embedding,
             top_k=top_k,
-            include_metadata=False
+            include_metadata=True  # Include metadata for file source/URLs
         )
     except Exception as e:
         raise ValueError(f"Failed to query Pinecone: {str(e)}.")

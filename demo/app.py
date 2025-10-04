@@ -8,6 +8,7 @@ from flask import (
 import traceback
 import sys
 import secrets
+import os
 
 # Ensure semantic_search package is importable
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -214,28 +215,40 @@ def api_discover():
 def api_connect_gdrive():
     """Initiate Google Drive OAuth connection."""
     try:
+        # Check if OAuth is configured
+        if not os.environ.get('GOOGLE_CLIENT_ID') or not os.environ.get('GOOGLE_CLIENT_SECRET'):
+            return jsonify({
+                "error": "Google Drive OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env file. See OAUTH-SETUP.md for instructions."
+            }), 400
+        
         success = SYNC_MANAGER.connect_google_drive()
         if success:
-            return jsonify({"message": "Google Drive connected successfully"}), 200
+            return jsonify({"message": "Google Drive connected successfully! Syncing files..."}), 200
         else:
-            return jsonify({"error": "Failed to connect Google Drive"}), 500
+            return jsonify({"error": "Failed to connect Google Drive. Check logs for details."}), 500
     except Exception as exc:
         app.logger.error(f"Google Drive connection failed: {exc}")
-        return jsonify({"error": str(exc)}), 500
+        return jsonify({"error": f"Connection error: {str(exc)}"}), 500
 
 
 @app.route("/api/connect/onedrive", methods=["POST"])
 def api_connect_onedrive():
     """Initiate OneDrive OAuth connection."""
     try:
+        # Check if OAuth is configured
+        if not os.environ.get('MICROSOFT_CLIENT_ID') or not os.environ.get('MICROSOFT_CLIENT_SECRET'):
+            return jsonify({
+                "error": "OneDrive OAuth not configured. Please set MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET in your .env file. See OAUTH-SETUP.md for instructions."
+            }), 400
+        
         success = SYNC_MANAGER.connect_onedrive()
         if success:
-            return jsonify({"message": "OneDrive connected successfully"}), 200
+            return jsonify({"message": "OneDrive connected successfully! Syncing files..."}), 200
         else:
-            return jsonify({"error": "Failed to connect OneDrive"}), 500
+            return jsonify({"error": "Failed to connect OneDrive. Check logs for details."}), 500
     except Exception as exc:
         app.logger.error(f"OneDrive connection failed: {exc}")
-        return jsonify({"error": str(exc)}), 500
+        return jsonify({"error": f"Connection error: {str(exc)}"}), 500
 
 
 @app.route("/api/disconnect/<source>", methods=["POST"])
