@@ -128,24 +128,41 @@ def api_search():
         # Pinecone returns dict with "matches"
         matches = response.get("matches", [])
 
-        # Format results with metadata from Pinecone
+        # Get all files from database for matching
+        db_files = SYNC_MANAGER.get_all_files()
+        db_files_dict = {f['pinecone_id']: f for f in db_files}
+        
+        # Format results with metadata from Pinecone + Database
         results = []
         for match in matches:
+            match_id = match.get("id", "")
             metadata = match.get("metadata", {})
-            result = {
-                "name": metadata.get("filename", "Unknown"),
-                "similarity": match.get("score", 0),
-                "source": metadata.get("source", "Unknown"),
-                "cloudUrl": metadata.get('webUrl'),
-                "file_path": metadata.get('file_path'),
-                "indexed": True
-            }
             
-            # Get upload date from database if available
-            db_files = SYNC_MANAGER.get_all_files()
-            db_file = next((f for f in db_files if f['filename'] == result['name']), None)
+            # Try to get file from database by pinecone_id
+            db_file = db_files_dict.get(match_id)
+            
             if db_file:
-                result['uploadDate'] = db_file.get('indexed_at')
+                # Use database info (most reliable)
+                result = {
+                    "name": db_file['filename'],
+                    "similarity": match.get("score", 0),
+                    "source": db_file['source'],
+                    "cloudUrl": db_file.get('metadata', {}).get('webUrl') if isinstance(db_file.get('metadata'), dict) else None,
+                    "file_path": db_file['file_path'],
+                    "uploadDate": db_file.get('indexed_at'),
+                    "indexed": True
+                }
+            else:
+                # Fallback to Pinecone metadata
+                result = {
+                    "name": metadata.get("filename", match_id),
+                    "similarity": match.get("score", 0),
+                    "source": metadata.get("source", "Unknown"),
+                    "cloudUrl": metadata.get('webUrl'),
+                    "file_path": metadata.get('file_path'),
+                    "uploadDate": None,
+                    "indexed": True
+                }
             
             results.append(result)
 

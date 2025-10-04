@@ -743,8 +743,8 @@
                             <div class="app-name">{{ app.name }}</div>
                             <div class="app-files-count">{{ app.fileCount }} {{ app.fileCount === 1 ? 'file' : 'files'
                                 }}</div>
-                            <div v-if="!app.connected && app.name !== 'Finder'" 
-                                 style="font-size: 12px; color: #673ED1; margin-top: 4px; font-weight: 500;">
+                            <div v-if="!app.connected && app.name !== 'Finder'"
+                                style="font-size: 12px; color: #673ED1; margin-top: 4px; font-weight: 500;">
                                 → Connect
                             </div>
                         </div>
@@ -910,7 +910,7 @@
                         const response = await fetch('/api/files');
                         const data = await response.json();
                         this.files = data.files || [];
-                        
+
                         // Update connection status from sync state
                         if (data.syncStatus) {
                             this.applications.forEach(app => {
@@ -928,7 +928,7 @@
                         this.showToast('Error loading files', 'error');
                     } finally {
                         // Keep showing sync status if still syncing
-                        const anySyncing = this.applications.some(app => 
+                        const anySyncing = this.applications.some(app =>
                             data?.syncStatus?.[app.name]?.status === 'syncing'
                         );
                         this.loading = anySyncing;
@@ -1071,7 +1071,7 @@
                         this.showToast('File is still being indexed...', 'info');
                         return;
                     }
-                    
+
                     // Open file in appropriate app
                     if (file.source === 'Finder') {
                         // Open local file via API (keeps Gnome open)
