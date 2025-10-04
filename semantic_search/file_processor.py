@@ -52,26 +52,30 @@ def process_pdf(file_path: Path, voyage_client) -> List[float]:
 def process_image(file_path: Path, voyage_client) -> List[float]:
     """Process image with OCR then text embedding."""
     try:
-        import pytesseract
         from PIL import Image
         
         # Open image
         image = Image.open(file_path)
         
-        # OCR to extract text
-        text = pytesseract.image_to_string(image)
+        # Try OCR if available
+        try:
+            import pytesseract
+            text = pytesseract.image_to_string(image)
+            
+            if text.strip():
+                # OCR successful, use text embedding
+                return embed_text(text, voyage_client)
+        except ImportError:
+            logger.info("Tesseract not installed, using multimodal embedding for image")
+        except Exception as e:
+            logger.warning(f"OCR failed for {file_path}, using multimodal: {e}")
         
-        if not text.strip():
-            logger.warning(f"No text found in image: {file_path}")
-            # Fallback: use image directly with multimodal embedding
-            return voyage_client.multimodal_embed(
-                inputs=[[image]],
-                model="voyage-multimodal-3",
-                input_type="document"
-            ).embeddings[0]
-        
-        # Embed the extracted text
-        return embed_text(text, voyage_client)
+        # Fallback or no OCR: use image directly with multimodal embedding
+        return voyage_client.multimodal_embed(
+            inputs=[[image]],
+            model="voyage-multimodal-3",
+            input_type="document"
+        ).embeddings[0]
         
     except Exception as e:
         logger.error(f"Failed to process image {file_path}: {e}")
