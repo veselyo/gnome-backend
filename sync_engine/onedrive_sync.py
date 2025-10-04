@@ -6,6 +6,7 @@ from typing import List, Dict, Optional
 from datetime import datetime
 import tempfile
 import os
+import time
 import requests
 from sync_engine.base_sync import BaseSyncEngine
 
@@ -79,6 +80,20 @@ class OneDriveSyncEngine(BaseSyncEngine):
                 self.access_token = result['access_token']
                 self.save_tokens(result)
                 self.logger.info("✅ OneDrive authentication successful")
+                
+                # Test the connection
+                try:
+                    headers = {'Authorization': f'Bearer {self.access_token}'}
+                    test_response = requests.get(f"{self.graph_endpoint}/me", headers=headers)
+                    if test_response.status_code == 200:
+                        user_data = test_response.json()
+                        user_name = user_data.get('displayName', 'Unknown')
+                        self.logger.info(f"✅ Connected to OneDrive as: {user_name}")
+                    else:
+                        self.logger.warning("Auth succeeded but connection test failed")
+                except Exception as test_error:
+                    self.logger.warning(f"Auth succeeded but test failed: {test_error}")
+                
                 return True
             else:
                 self.logger.error(f"❌ Authentication failed: {result.get('error_description')}")
@@ -86,6 +101,8 @@ class OneDriveSyncEngine(BaseSyncEngine):
                 
         except Exception as e:
             self.logger.error(f"❌ OneDrive authentication failed: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
             return False
     
     def is_authenticated(self) -> bool:
@@ -110,60 +127,98 @@ class OneDriveSyncEngine(BaseSyncEngine):
     
     def fetch_files(self) -> List[Dict]:
         """
-        Fetch PDF files from OneDrive.
+        Fetch PDF files from OneDrive with retry logic and better error handling.
         
         Returns:
             List of file info dicts
         """
         if not self.access_token:
             if not self.authenticate():
+                self.logger.error("Cannot fetch files - not authenticated")
                 return []
         
         files = []
         next_link = f"{self.graph_endpoint}/me/drive/root/search(q='.pdf')"
+        max_retries = 3
         
         try:
-            while next_link:
+            page_count = 0
+            while next_link and page_count < 100:  # Safety limit: max 100 pages
                 headers = {'Authorization': f'Bearer {self.access_token}'}
-                response = requests.get(next_link, headers=headers)
                 
-                if response.status_code == 401:
-                    # Token expired, re-authenticate
-                    if self.authenticate():
-                        headers = {'Authorization': f'Bearer {self.access_token}'}
-                        response = requests.get(next_link, headers=headers)
-                    else:
-                        break
-                
-                if response.status_code != 200:
-                    self.logger.error(f"OneDrive API error: {response.status_code}")
-                    break
-                
-                data = response.json()
-                
-                for item in data.get('value', []):
-                    # Only process PDF files
-                    if item.get('file') and item['name'].lower().endswith('.pdf'):
-                        files.append({
-                            'filename': item['name'],
-                            'file_path': item['id'],  # Use OneDrive ID
-                            'file_size': item.get('size', 0),
-                            'last_modified': datetime.fromisoformat(item['lastModifiedDateTime'].replace('Z', '+00:00')),
-                            'file_hash': item['id'],  # Use ID as hash
-                            'download_url': item.get('webUrl'),
-                            'metadata': {
-                                'onedrive_id': item['id'],
-                                'download_link': item.get('@microsoft.graph.downloadUrl')
-                            }
-                        })
-                
-                next_link = data.get('@odata.nextLink')
+                retries = 0
+                while retries <= max_retries:
+                    try:
+                        response = requests.get(next_link, headers=headers, timeout=30)
+                        
+                        if response.status_code == 401:
+                            # Token expired, re-authenticate
+                            self.logger.info("Token expired, re-authenticating...")
+                            if self.authenticate():
+                                headers = {'Authorization': f'Bearer {self.access_token}'}
+                                continue  # Retry with new token
+                            else:
+                                return files  # Can't auth, return what we have
+                        
+                        if response.status_code != 200:
+                            self.logger.error(f"OneDrive API error: {response.status_code} - {response.text[:200]}")
+                            if retries < max_retries:
+                                retries += 1
+                                time.sleep(2 ** retries)
+                                continue
+                            else:
+                                break  # Give up on this page
+                        
+                        # Success!
+                        data = response.json()
+                        
+                        for item in data.get('value', []):
+                            # Only process PDF files
+                            if item.get('file') and item['name'].lower().endswith('.pdf'):
+                                files.append({
+                                    'filename': item['name'],
+                                    'file_path': item['id'],  # Use OneDrive ID
+                                    'file_size': item.get('size', 0),
+                                    'last_modified': datetime.fromisoformat(item['lastModifiedDateTime'].replace('Z', '+00:00')),
+                                    'file_hash': f"onedrive_{item['id']}",  # Unique hash
+                                    'download_url': item.get('webUrl'),
+                                    'metadata': {
+                                        'onedrive_id': item['id'],
+                                        'download_link': item.get('@microsoft.graph.downloadUrl'),
+                                        'webUrl': item.get('webUrl')  # URL to open in browser
+                                    }
+                                })
+                        
+                        next_link = data.get('@odata.nextLink')
+                        page_count += 1
+                        break  # Success, exit retry loop
+                        
+                    except requests.exceptions.Timeout as timeout_error:
+                        if retries < max_retries:
+                            retries += 1
+                            self.logger.warning(f"Timeout (attempt {retries}/{max_retries}): {timeout_error}")
+                            time.sleep(2 ** retries)
+                            continue
+                        else:
+                            self.logger.error("Max retries exceeded due to timeouts")
+                            return files  # Return what we have
+                    
+                    except Exception as page_error:
+                        if retries < max_retries:
+                            retries += 1
+                            self.logger.warning(f"Page error (attempt {retries}/{max_retries}): {page_error}")
+                            time.sleep(2 ** retries)
+                            continue
+                        else:
+                            raise
             
-            self.logger.info(f"Fetched {len(files)} PDFs from OneDrive")
+            self.logger.info(f"✅ Fetched {len(files)} PDFs from OneDrive")
             return files
             
         except Exception as e:
-            self.logger.error(f"Failed to fetch OneDrive files: {e}")
+            self.logger.error(f"❌ Failed to fetch OneDrive files: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
             return []
     
     def download_file(self, file_info: Dict) -> Optional[Path]:

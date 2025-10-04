@@ -6,6 +6,7 @@ from typing import List, Dict, Optional
 from datetime import datetime
 import tempfile
 import os
+import time
 from sync_engine.base_sync import BaseSyncEngine
 
 
@@ -79,10 +80,21 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
             # Build Drive service
             self.service = build('drive', 'v3', credentials=self.credentials)
             self.logger.info("✅ Google Drive authentication successful")
+            
+            # Test the connection
+            try:
+                about = self.service.about().get(fields="user").execute()
+                user_email = about.get('user', {}).get('emailAddress', 'Unknown')
+                self.logger.info(f"✅ Connected to Google Drive as: {user_email}")
+            except Exception as test_error:
+                self.logger.warning(f"Auth succeeded but test failed: {test_error}")
+            
             return True
             
         except Exception as e:
             self.logger.error(f"❌ Google Drive authentication failed: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
             return False
     
     def is_authenticated(self) -> bool:
@@ -107,58 +119,71 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
     
     def fetch_files(self) -> List[Dict]:
         """
-        Fetch PDF files from Google Drive.
+        Fetch PDF files from Google Drive with retry logic.
         
         Returns:
             List of file info dicts
         """
         if not self.service:
             if not self.authenticate():
+                self.logger.error("Cannot fetch files - not authenticated")
                 return []
         
         files = []
         page_token = None
-        
-        # Get last sync cursor for incremental sync
-        sync_state = self.db.get_sync_state('Google Drive')
-        if sync_state and sync_state.get('cursor'):
-            page_token = sync_state['cursor']
+        max_retries = 3
         
         try:
             # Query for PDF files
             query = "mimeType='application/pdf' and trashed=false"
             
+            retries = 0
             while True:
-                response = self.service.files().list(
-                    q=query,
-                    spaces='drive',
-                    fields='nextPageToken, files(id, name, size, modifiedTime, webContentLink)',
-                    pageToken=page_token,
-                    pageSize=100
-                ).execute()
-                
-                for file in response.get('files', []):
-                    files.append({
-                        'filename': file['name'],
-                        'file_path': file['id'],  # Use Drive ID as path
-                        'file_size': int(file.get('size', 0)),
-                        'last_modified': datetime.fromisoformat(file['modifiedTime'].replace('Z', '+00:00')),
-                        'file_hash': file['id'],  # Use ID as hash for cloud files
-                        'download_url': file.get('webContentLink'),
-                        'metadata': {
-                            'drive_id': file['id']
-                        }
-                    })
-                
-                page_token = response.get('nextPageToken')
-                if not page_token:
-                    break
+                try:
+                    response = self.service.files().list(
+                        q=query,
+                        spaces='drive',
+                        fields='nextPageToken, files(id, name, size, modifiedTime, webContentLink, webViewLink)',
+                        pageToken=page_token,
+                        pageSize=100
+                    ).execute()
+                    
+                    for file in response.get('files', []):
+                        files.append({
+                            'filename': file['name'],
+                            'file_path': file['id'],  # Use Drive ID as path
+                            'file_size': int(file.get('size', 0)),
+                            'last_modified': datetime.fromisoformat(file['modifiedTime'].replace('Z', '+00:00')),
+                            'file_hash': f"gdrive_{file['id']}",  # Unique hash for cloud files
+                            'download_url': file.get('webContentLink'),
+                            'metadata': {
+                                'drive_id': file['id'],
+                                'webUrl': file.get('webViewLink')  # URL to open in browser
+                            }
+                        })
+                    
+                    page_token = response.get('nextPageToken')
+                    if not page_token:
+                        break
+                    
+                    retries = 0  # Reset retry counter on success
+                    
+                except Exception as page_error:
+                    if retries < max_retries:
+                        retries += 1
+                        self.logger.warning(f"Page fetch failed (attempt {retries}/{max_retries}): {page_error}")
+                        time.sleep(2 ** retries)  # Exponential backoff
+                        continue
+                    else:
+                        raise  # Give up after max retries
             
-            self.logger.info(f"Fetched {len(files)} PDFs from Google Drive")
+            self.logger.info(f"✅ Fetched {len(files)} PDFs from Google Drive")
             return files
             
         except Exception as e:
-            self.logger.error(f"Failed to fetch Google Drive files: {e}")
+            self.logger.error(f"❌ Failed to fetch Google Drive files: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
             return []
     
     def download_file(self, file_info: Dict) -> Optional[Path]:
