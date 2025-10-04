@@ -4,6 +4,7 @@ Finder sync engine - watches local folders for PDF files.
 from pathlib import Path
 from typing import List, Dict, Optional
 import os
+import logging
 from datetime import datetime
 from sync_engine.base_sync import BaseSyncEngine
 from database.models import compute_file_hash

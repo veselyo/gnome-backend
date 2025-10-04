@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Dict, Optional
 from datetime import datetime
 import tempfile
+import os
 import requests
 from sync_engine.base_sync import BaseSyncEngine
 
