@@ -168,18 +168,23 @@ def api_search():
             results.append(result)
         
         # Step 2: Apply hybrid search reranking (semantic + keyword)
-        results = hybrid_search_rerank(query, results, semantic_weight=0.6, keyword_weight=0.4)
+        results = hybrid_search_rerank(query, results, semantic_weight=0.4, keyword_weight=0.6)
         
         # Step 3: Boost exact matches in filename
-        results = boost_exact_matches(query, results, boost_factor=0.3)
+        results = boost_exact_matches(query, results, boost_factor=0.35)
         
-        # Step 4: Filter low-relevance results (lower threshold)
-        results = filter_by_relevance(results, min_score=0.1)
+        # Step 4: Filter low-relevance results (smart filtering - don't over-filter)
+        results_before_filter = len(results)
+        results = filter_by_relevance(results, min_score=0.05)
         
         # Step 5: Return top 10 after reranking
         results = results[:10]
 
-        app.logger.info(f"Search '{query}': {len(results)} results (from {len(matches)} semantic matches)")
+        app.logger.info(f"Search '{query}': {len(results)} results (from {len(matches)} semantic → {results_before_filter} after rerank → {len(results)} final)")
+        
+        # Debug: Log top result
+        if results:
+            app.logger.info(f"  Top result: {results[0]['name']} (score: {results[0]['similarity']:.3f})")
         return jsonify({"results": results}), 200
         
     except Exception as exc:  # pylint: disable=broad-except

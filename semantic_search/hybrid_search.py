@@ -17,17 +17,21 @@ def calculate_keyword_score(query: str, filename: str) -> float:
     Returns:
         Score between 0 and 1
     """
-    query_lower = query.lower()
+    query_lower = query.lower().strip()
     filename_lower = filename.lower()
     
     # Remove file extension for matching
     filename_base = filename_lower.rsplit('.', 1)[0] if '.' in filename_lower else filename_lower
     
-    # Exact match (highest score)
+    # Exact substring match (highest score)
     if query_lower in filename_base:
         return 1.0
     
-    # Word-level matching
+    # Check if filename contains query as whole word
+    if f' {query_lower} ' in f' {filename_base} ' or filename_base.startswith(query_lower):
+        return 0.95
+    
+    # Word-level matching (case insensitive)
     query_words = set(re.findall(r'\w+', query_lower))
     filename_words = set(re.findall(r'\w+', filename_base))
     
@@ -36,13 +40,22 @@ def calculate_keyword_score(query: str, filename: str) -> float:
     
     # Calculate word overlap
     common_words = query_words & filename_words
-    word_score = len(common_words) / len(query_words)
+    word_score = len(common_words) / len(query_words) if query_words else 0
     
-    # Fuzzy string matching
+    # Partial word matching (for prefixes like "impr" matching "improper")
+    partial_matches = 0
+    for q_word in query_words:
+        for f_word in filename_words:
+            if len(q_word) >= 3 and (f_word.startswith(q_word) or q_word in f_word):
+                partial_matches += 1
+                break
+    partial_score = partial_matches / len(query_words) if query_words else 0
+    
+    # Fuzzy string matching (for typos)
     fuzzy_score = SequenceMatcher(None, query_lower, filename_base).ratio()
     
     # Combined score (weighted)
-    combined = (word_score * 0.7) + (fuzzy_score * 0.3)
+    combined = (word_score * 0.5) + (partial_score * 0.3) + (fuzzy_score * 0.2)
     
     return combined
 
@@ -82,7 +95,7 @@ def hybrid_search_rerank(query: str, semantic_results: List[Dict],
 
 def filter_by_relevance(results: List[Dict], min_score: float = 0.15) -> List[Dict]:
     """
-    Filter out low-relevance results.
+    Filter out low-relevance results (smart filtering).
     
     Args:
         results: Search results
@@ -91,7 +104,18 @@ def filter_by_relevance(results: List[Dict], min_score: float = 0.15) -> List[Di
     Returns:
         Filtered results
     """
-    return [r for r in results if r['similarity'] >= min_score]
+    # Don't filter if we have very few results - show what we have
+    if len(results) <= 5:
+        return results
+    
+    # Filter by threshold
+    filtered = [r for r in results if r['similarity'] >= min_score]
+    
+    # If filtering removed everything, return top 5 unfiltered
+    if len(filtered) == 0 and len(results) > 0:
+        return results[:5]
+    
+    return filtered
 
 
 def boost_exact_matches(query: str, results: List[Dict], boost_factor: float = 0.3) -> List[Dict]:
