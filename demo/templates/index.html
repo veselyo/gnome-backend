@@ -1094,11 +1094,14 @@
                     this.loadingMessage = `Connecting to ${sourceName}...`;
 
                     try {
-                        const endpoint = sourceName === 'Google Drive'
+                        const endpoint = sourceName === 'Google Drive' 
                             ? '/api/connect/google-drive'
                             : '/api/connect/onedrive';
-
-                        const response = await fetch(endpoint, { method: 'POST' });
+                        
+                        const response = await fetch(endpoint, { 
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
                         const data = await response.json();
 
                         if (response.ok) {
@@ -1108,6 +1111,28 @@
                             if (app) app.connected = true;
                             // Trigger sync
                             this.triggerSync();
+                        } else if (response.status === 403 && data.action === 'request_access') {
+                            // Access denied - ask user to request access
+                            const email = prompt(`${sourceName} requires approval.\n\nEnter your ${sourceName === 'Google Drive' ? 'Gmail' : 'Microsoft'} email to request access:`);
+                            
+                            if (email && email.includes('@')) {
+                                // Send access request
+                                const requestResponse = await fetch(endpoint, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        request_access: true,
+                                        email: email
+                                    })
+                                });
+                                
+                                const requestData = await requestResponse.json();
+                                if (requestResponse.ok || requestResponse.status === 202) {
+                                    this.showToast(`Access requested! Admin will add ${email} as a test user.`, 'success');
+                                } else {
+                                    this.showToast('Failed to request access', 'error');
+                                }
+                            }
                         } else {
                             this.showToast(data.error || 'Connection failed', 'error');
                         }

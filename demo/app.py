@@ -250,21 +250,55 @@ def api_discover():
 
 @app.route("/api/connect/google-drive", methods=["POST"])
 def api_connect_gdrive():
-    """Initiate Google Drive OAuth connection."""
+    """Initiate Google Drive OAuth connection or request access."""
+    data = request.get_json() or {}
+    request_access = data.get('request_access', False)
+    user_email = data.get('email')
+    
     try:
         # Check if OAuth is configured
         if not os.environ.get('GOOGLE_CLIENT_ID') or not os.environ.get('GOOGLE_CLIENT_SECRET'):
             return jsonify({
-                "error": "Google Drive OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env file. See OAUTH-SETUP.md for instructions."
+                "error": "Google Drive OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env file."
             }), 400
         
+        # If user is requesting access (after 403 error)
+        if request_access and user_email:
+            from oauth.access_request import send_access_request_email, store_access_request
+            
+            # Store request in database
+            store_access_request(DB, user_email, 'Google Drive')
+            
+            # Send notification (logs for now, can add email later)
+            send_access_request_email(user_email, 'Google Drive')
+            
+            return jsonify({
+                "message": f"Access requested for {user_email}! You'll be notified when approved.",
+                "status": "pending"
+            }), 202  # 202 Accepted
+        
+        # Try to connect
         success = SYNC_MANAGER.connect_google_drive()
         if success:
             return jsonify({"message": "Google Drive connected successfully! Syncing files..."}), 200
         else:
-            return jsonify({"error": "Failed to connect Google Drive. Check logs for details."}), 500
+            # Connection failed - might need to request access
+            return jsonify({
+                "error": "Connection failed. If you see 'access_denied', you may need to request access.",
+                "action": "request_access"
+            }), 403
+            
     except Exception as exc:
         app.logger.error(f"Google Drive connection failed: {exc}")
+        
+        # Check if it's an access denied error
+        error_str = str(exc).lower()
+        if 'access_denied' in error_str or '403' in error_str:
+            return jsonify({
+                "error": "Access denied. Please request access.",
+                "action": "request_access"
+            }), 403
+        
         return jsonify({"error": f"Connection error: {str(exc)}"}), 500
 
 
