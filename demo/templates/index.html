@@ -765,7 +765,9 @@
                         </div>
                         <div v-for="file in displayFiles" :key="file.name" class="file-table-row">
                             <div class="col-name">
-                                <div class="file-icon">PDF</div>
+                                <div class="file-icon" :style="{ backgroundColor: getFileColor(file.name) }">
+                                    {{ getFileType(file.name) }}
+                                </div>
                                 <div class="file-name" @click="handleFileClick(file)">{{ file.name }}</div>
                             </div>
                             <div class="col-date">{{ formatDate(file.uploadDate) }}</div>
@@ -877,6 +879,14 @@
                         this.fetchFiles();
                     }
                 }, 30000);
+                
+                // Add keyboard shortcut: Cmd+K to focus search
+                document.addEventListener('keydown', (e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                        e.preventDefault();
+                        document.querySelector('.search-input').focus();
+                    }
+                });
             },
             methods: {
                 hashString(str) {
