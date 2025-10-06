@@ -1072,7 +1072,7 @@
                     }, 3000);
                 },
 
-                async handleFileClick(file) {
+                handleFileClick(file) {
                     // Check if file is still being indexed
                     if (!file.indexed) {
                         this.showToast('File is still being indexed...', 'info');
@@ -1082,24 +1082,23 @@
                     // Open file in appropriate app
                     if (file.source === 'Finder') {
                         // Open local file via API (keeps Gnome open)
-                        try {
-                            await fetch(`/api/open-file/${encodeURIComponent(file.name)}`);
-                            this.showToast(`Opened ${file.name}`, 'success');
-                        } catch (error) {
-                            this.showToast('Failed to open file', 'error');
-                        }
+                        fetch(`/api/open-file/${encodeURIComponent(file.name)}`)
+                            .then(() => this.showToast(`Opened ${file.name}`, 'success'))
+                            .catch(() => this.showToast('Failed to open file', 'error'));
                     } else if (file.source === 'Google Drive') {
-                        // Open Google Drive file in default browser (Safari/Chrome)
-                        if (file.cloudUrl) {
-                            // Use Electron shell to open in external browser
-                            window.open(file.cloudUrl, '_blank');
-                            this.showToast(`Opening in browser...`, 'success');
-                        } else {
-                            // Fallback: construct Google Drive URL
-                            const driveUrl = `https://drive.google.com/file/d/${file.file_path}/view`;
-                            window.open(driveUrl, '_blank');
-                            this.showToast(`Opening in browser...`, 'success');
-                        }
+                        // Open Google Drive file in browser tab (same as OAuth!)
+                        const url = file.cloudUrl || `https://drive.google.com/file/d/${file.file_path}/view`;
+
+                        // Create hidden link and click it (forces browser to handle, not Electron)
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        this.showToast('Opening in browser...', 'success');
                     } else {
                         this.showToast('File location unavailable', 'error');
                     }
@@ -1165,14 +1164,20 @@
                         const data = await response.json();
 
                         if (response.ok) {
-                            this.showToast(data.message, 'success');
+                            this.showToast(`${sourceName} disconnected`, 'success');
+                            
+                            // Update app state immediately
                             const app = this.applications.find(a => a.name === sourceName);
                             if (app) {
-                                app.connected = false;
-                                app.fileCount = 0;  // Reset file count
+                                app.connected = false;  // Show "Not connected"
+                                app.fileCount = 0;      // Reset count
                             }
+                            
                             // Refresh file list to remove disconnected source files
                             await this.fetchFiles();
+                            
+                            // Force UI update
+                            this.$forceUpdate();
                         } else {
                             this.showToast(data.error || 'Disconnect failed', 'error');
                         }
