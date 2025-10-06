@@ -67,14 +67,14 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
                         "installed": {
                             "client_id": client_id,
                             "client_secret": client_secret,
-                            "redirect_uris": ["http://localhost:8080/"],
+                            "redirect_uris": ["http://localhost:8081/"],
                             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                             "token_uri": "https://oauth2.googleapis.com/token"
                         }
                     },
                     SCOPES
                 )
-                self.credentials = flow.run_local_server(port=8080)
+                self.credentials = flow.run_local_server(port=8081)  # Use 8081 instead of 8080
                 self.save_tokens()
             
             # Build Drive service
