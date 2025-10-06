@@ -29,11 +29,13 @@ class FinderSyncEngine(BaseSyncEngine):
     
     def fetch_files(self) -> List[Dict]:
         """
-        Scan watched folders for PDF files.
+        Scan watched folders for supported file types (PDFs, DOCX, TXT, etc.).
         
         Returns:
             List of file info dicts
         """
+        from semantic_search.file_processor import get_supported_extensions
+        
         files = []
         watched_folders = self.db.get_watched_folders('Finder')
         
@@ -48,6 +50,9 @@ class FinderSyncEngine(BaseSyncEngine):
                 if folder.exists():
                     self.db.add_watched_folder('Finder', str(folder), recursive=True)
         
+        # Get supported file extensions
+        supported_exts = get_supported_extensions()
+        
         # Scan each folder
         for folder in folders_to_scan:
             if not folder.exists():
@@ -55,27 +60,28 @@ class FinderSyncEngine(BaseSyncEngine):
                 continue
             
             try:
-                # Find all PDF files recursively
-                pdf_files = list(folder.rglob('*.pdf'))
-                
-                for pdf_path in pdf_files:
-                    try:
-                        stat = pdf_path.stat()
-                        file_hash = compute_file_hash(str(pdf_path))
-                        
-                        files.append({
-                            'filename': pdf_path.name,
-                            'file_path': str(pdf_path),
-                            'file_size': stat.st_size,
-                            'last_modified': datetime.fromtimestamp(stat.st_mtime),
-                            'file_hash': file_hash,
-                            'metadata': {
-                                'folder': str(pdf_path.parent)
-                            }
-                        })
-                    except Exception as e:
-                        self.logger.warning(f"Error reading {pdf_path}: {e}")
-                        continue
+                # Find all supported files recursively
+                for ext in supported_exts:
+                    pattern = f'*{ext}'
+                    for file_path in folder.rglob(pattern):
+                        try:
+                            stat = file_path.stat()
+                            file_hash = compute_file_hash(str(file_path))
+                            
+                            files.append({
+                                'filename': file_path.name,
+                                'file_path': str(file_path),
+                                'file_size': stat.st_size,
+                                'last_modified': datetime.fromtimestamp(stat.st_mtime),
+                                'file_hash': file_hash,
+                                'metadata': {
+                                    'folder': str(file_path.parent),
+                                    'extension': file_path.suffix
+                                }
+                            })
+                        except Exception as e:
+                            self.logger.warning(f"Error reading {file_path}: {e}")
+                            continue
                         
             except Exception as e:
                 self.logger.error(f"Error scanning folder {folder}: {e}")

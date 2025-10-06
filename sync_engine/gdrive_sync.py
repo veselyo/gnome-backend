@@ -134,8 +134,18 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
         max_retries = 3
         
         try:
-            # Query for PDF files
-            query = "mimeType='application/pdf' and trashed=false"
+            # Query for multiple file types (PDFs, docs, images, etc.)
+            mime_types = [
+                "mimeType='application/pdf'",
+                "mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document'",  # DOCX
+                "mimeType='application/vnd.openxmlformats-officedocument.presentationml.presentation'",  # PPTX
+                "mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'",  # XLSX
+                "mimeType='text/plain'",  # TXT
+                "mimeType='text/markdown'",  # MD
+                "mimeType='image/png'",
+                "mimeType='image/jpeg'"
+            ]
+            query = f"({' or '.join(mime_types)}) and trashed=false"
             
             retries = 0
             while True:
@@ -149,8 +159,12 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
                     ).execute()
                     
                     for file in response.get('files', []):
+                        # Get file extension
+                        filename = file['name']
+                        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+                        
                         files.append({
-                            'filename': file['name'],
+                            'filename': filename,
                             'file_path': file['id'],  # Use Drive ID as path
                             'file_size': int(file.get('size', 0)),
                             'last_modified': datetime.fromisoformat(file['modifiedTime'].replace('Z', '+00:00')),
@@ -158,7 +172,9 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
                             'download_url': file.get('webContentLink'),
                             'metadata': {
                                 'drive_id': file['id'],
-                                'webUrl': file.get('webViewLink')  # URL to open in browser
+                                'webUrl': file.get('webViewLink'),  # URL to open in browser
+                                'mimeType': file.get('mimeType', ''),
+                                'extension': f'.{ext}' if ext else ''
                             }
                         })
                     
