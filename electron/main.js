@@ -52,11 +52,15 @@ function startFlask() {
       appPath = path.join(process.resourcesPath, 'app', 'demo/app.py');
     }
 
-    // Set environment variables
+    // Set environment variables (pass all to Flask)
     const env = Object.assign({}, process.env, {
       VOYAGE_API_KEY: process.env.VOYAGE_API_KEY || '',
       PINECONE_API_KEY: process.env.PINECONE_API_KEY || '',
-      PINECONE_HOST: process.env.PINECONE_HOST || ''
+      PINECONE_HOST: process.env.PINECONE_HOST || '',
+      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
+      GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
+      MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID || '',
+      MICROSOFT_CLIENT_SECRET: process.env.MICROSOFT_CLIENT_SECRET || ''
     });
 
     console.log('Starting Flask server...');
