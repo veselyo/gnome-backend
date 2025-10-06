@@ -168,10 +168,16 @@ def process_excel(file_path: Path, voyage_client) -> List[float]:
 
 
 def process_text(file_path: Path, voyage_client) -> List[float]:
-    """Process plain text or markdown file."""
+    """Process plain text or markdown file with encoding fallback."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            text = f.read()
+        # Try UTF-8 first
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+        except UnicodeDecodeError:
+            # Fallback to latin-1 for non-UTF8 files
+            with open(file_path, 'r', encoding='latin-1', errors='ignore') as f:
+                text = f.read()
         
         if not text.strip():
             raise ValueError("Empty file")
@@ -225,7 +231,17 @@ def get_supported_extensions() -> List[str]:
 
 
 def is_supported_file(file_path: Union[str, Path]) -> bool:
-    """Check if file type is supported."""
+    """Check if file type is supported and not a system file."""
     path = Path(file_path)
+    
+    # Skip system/thumbnail files
+    skip_extensions = ['.thm', '.tmp', '.cache', '.ds_store']
+    if path.suffix.lower() in skip_extensions:
+        return False
+    
+    # Skip hidden files and system folders
+    if path.name.startswith('.') or '/.git/' in str(path) or '/node_modules/' in str(path):
+        return False
+    
     return path.suffix.lower() in get_supported_extensions()
 

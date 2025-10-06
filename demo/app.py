@@ -370,7 +370,7 @@ def api_open_file(filename):
             return jsonify({"message": "File opened in Finder"}), 200
             
         elif file_info['source'] == 'Google Drive':
-            # Open Google Drive file in default browser
+            # Open Google Drive file in existing browser tab
             import json
             metadata = file_info.get('metadata', {})
             if isinstance(metadata, str):
@@ -384,8 +384,27 @@ def api_open_file(filename):
                 # Construct URL from Drive ID
                 url = f"https://drive.google.com/file/d/{file_info['file_path']}/view"
             
-            # Open in external browser
-            subprocess.run(['open', url], check=True)
+            # Try to open in existing browser (checks for Safari, Chrome, then default)
+            # This opens in a new tab of existing browser window
+            browsers = ['Safari', 'Google Chrome', 'Firefox']
+            opened = False
+            
+            for browser in browsers:
+                try:
+                    # Check if browser is running
+                    check = subprocess.run(['pgrep', '-x', browser], capture_output=True)
+                    if check.returncode == 0:
+                        # Browser is running - open URL in it
+                        subprocess.run(['open', '-a', browser, url], check=True)
+                        opened = True
+                        break
+                except:
+                    continue
+            
+            if not opened:
+                # No browser running - open in default
+                subprocess.run(['open', url], check=True)
+            
             return jsonify({"message": "File opened in browser"}), 200
         else:
             return jsonify({"error": "Unsupported source"}), 400
