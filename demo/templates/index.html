@@ -1070,7 +1070,7 @@
                         this.showToast('File is still being indexed...', 'info');
                         return;
                     }
-
+                    
                     // Open file in appropriate app
                     if (file.source === 'Finder') {
                         // Open local file via API (keeps Gnome open)
@@ -1080,10 +1080,18 @@
                         } catch (error) {
                             this.showToast('Failed to open file', 'error');
                         }
-                    } else if (file.cloudUrl) {
-                        // Open cloud file in browser (new tab)
-                        window.open(file.cloudUrl, '_blank');
-                        this.showToast(`Opening in browser...`, 'success');
+                    } else if (file.source === 'Google Drive') {
+                        // Open Google Drive file in default browser (Safari/Chrome)
+                        if (file.cloudUrl) {
+                            // Use Electron shell to open in external browser
+                            window.open(file.cloudUrl, '_blank');
+                            this.showToast(`Opening in browser...`, 'success');
+                        } else {
+                            // Fallback: construct Google Drive URL
+                            const driveUrl = `https://drive.google.com/file/d/${file.file_path}/view`;
+                            window.open(driveUrl, '_blank');
+                            this.showToast(`Opening in browser...`, 'success');
+                        }
                     } else {
                         this.showToast('File location unavailable', 'error');
                     }
