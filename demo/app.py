@@ -384,26 +384,52 @@ def api_open_file(filename):
                 # Construct URL from Drive ID
                 url = f"https://drive.google.com/file/d/{file_info['file_path']}/view"
             
-            # Try to open in existing browser (checks for Safari, Chrome, then default)
-            # This opens in a new tab of existing browser window
-            browsers = ['Safari', 'Google Chrome', 'Firefox']
-            opened = False
-            
-            for browser in browsers:
-                try:
-                    # Check if browser is running
-                    check = subprocess.run(['pgrep', '-x', browser], capture_output=True)
-                    if check.returncode == 0:
-                        # Browser is running - open URL in it
-                        subprocess.run(['open', '-a', browser, url], check=True)
-                        opened = True
-                        break
-                except:
-                    continue
-            
-            if not opened:
-                # No browser running - open in default
-                subprocess.run(['open', url], check=True)
+            # Open in existing browser tab (not new window)
+            try:
+                # Try Safari first with AppleScript (opens in new tab of existing window)
+                safari_script = f'''
+                tell application "Safari"
+                    if (count of windows) > 0 then
+                        tell front window
+                            set current tab to (make new tab with properties {{URL:"{url}"}})
+                        end tell
+                    else
+                        make new document with properties {{URL:"{url}"}}
+                    end if
+                    activate
+                end tell
+                '''
+                result = subprocess.run(['osascript', '-e', safari_script], 
+                                       capture_output=True, text=True, timeout=5)
+                
+                if result.returncode == 0:
+                    app.logger.info("Opened in Safari tab")
+                else:
+                    # Fallback to Chrome
+                    chrome_script = f'''
+                    tell application "Google Chrome"
+                        if (count of windows) > 0 then
+                            tell front window
+                                make new tab with properties {{URL:"{url}"}}
+                            end tell
+                        else
+                            make new window with properties {{URL:"{url}"}}
+                        end if
+                        activate
+                    end tell
+                    '''
+                    result = subprocess.run(['osascript', '-e', chrome_script],
+                                           capture_output=True, text=True, timeout=5)
+                    
+                    if result.returncode == 0:
+                        app.logger.info("Opened in Chrome tab")
+                    else:
+                        # Final fallback - just open URL
+                        subprocess.run(['open', url])
+                        
+            except Exception as browser_error:
+                app.logger.warning(f"AppleScript failed, using fallback: {browser_error}")
+                subprocess.run(['open', url])
             
             return jsonify({"message": "File opened in browser"}), 200
         else:
