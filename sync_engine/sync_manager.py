@@ -195,9 +195,14 @@ class SyncManager:
         # Mark all files from this source as deleted
         cursor = self.db.conn.cursor()
         cursor.execute("UPDATE files SET is_deleted = 1 WHERE source = ?", (source_name,))
+        deleted_count = cursor.rowcount
+        
+        # Delete sync state so it shows as "never_synced" / not connected
+        cursor.execute("DELETE FROM sync_state WHERE source = ?", (source_name,))
+        
         self.db.conn.commit()
         
-        logger.info(f"Disconnected {source_name} and removed {cursor.rowcount} files")
+        logger.info(f"Disconnected {source_name} and removed {deleted_count} files")
     
     def get_sync_status(self) -> Dict:
         """Get sync status for all sources."""
