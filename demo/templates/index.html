@@ -1046,9 +1046,8 @@
                             </div>
                             <h3 class="ecosystem-name">All Files</h3>
                             <div class="ecosystem-count">{{ files.length }} files</div>
-                            <div class="ecosystem-arrow">→</div>
                         </div>
-
+                        
                         <!-- Finder Card -->
                         <div class="ecosystem-card" @click="selectedEcosystem = 'Finder'">
                             <div class="ecosystem-icon">
@@ -1059,9 +1058,8 @@
                             <h3 class="ecosystem-name">Finder</h3>
                             <div class="ecosystem-count">{{ files.filter(f => f.source === 'Finder').length }} files
                             </div>
-                            <div class="ecosystem-arrow">→</div>
                         </div>
-
+                        
                         <!-- Google Drive Card -->
                         <div class="ecosystem-card" @click="selectedEcosystem = 'Google Drive'">
                             <div class="ecosystem-icon">
@@ -1072,7 +1070,6 @@
                             <h3 class="ecosystem-name">Google Drive</h3>
                             <div class="ecosystem-count">{{ files.filter(f => f.source === 'Google Drive').length }}
                                 files</div>
-                            <div class="ecosystem-arrow">→</div>
                         </div>
                     </div>
 
