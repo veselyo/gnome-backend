@@ -923,7 +923,7 @@
                         const response = await fetch('/api/files');
                         const data = await response.json();
                         this.files = data.files || [];
-
+                        
                         // Update connection status from sync state
                         if (data.syncStatus) {
                             this.applications.forEach(app => {
@@ -931,20 +931,14 @@
                                 if (syncState && syncState.status !== 'never_synced') {
                                     app.connected = true;
                                 }
-                                // Show sync progress
-                                if (syncState && syncState.status === 'syncing') {
-                                    this.loadingMessage = `Syncing ${app.name}...`;
-                                }
                             });
                         }
+                        
+                        // Always clear loading after fetching
+                        this.loading = false;
                     } catch (error) {
                         this.showToast('Error loading files', 'error');
-                    } finally {
-                        // Keep showing sync status if still syncing
-                        const anySyncing = this.applications.some(app =>
-                            data?.syncStatus?.[app.name]?.status === 'syncing'
-                        );
-                        this.loading = anySyncing;
+                        this.loading = false;
                     }
                 },
 
