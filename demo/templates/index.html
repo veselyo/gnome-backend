@@ -1076,15 +1076,12 @@
                     <!-- File Types View (Files View - Step 2) -->
                     <div v-if="currentView === 'files' && selectedEcosystem && !selectedFileType"
                         class="file-type-groups-view">
-                        <div class="back-header">
-                            <button @click="selectedEcosystem = null" class="back-btn">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                                </svg>
-                                Back
-                            </button>
-                            <h2 class="view-title">{{ selectedEcosystem }}</h2>
+                        <div class="breadcrumb-header">
+                            <div class="breadcrumb">
+                                <span class="breadcrumb-item" @click="selectedEcosystem = null">All Files</span>
+                                <span class="breadcrumb-separator">></span>
+                                <span class="breadcrumb-item active">{{ selectedEcosystem }}</span>
+                            </div>
                             <span class="view-count">{{ ecosystemFiles.length }} files</span>
                         </div>
 
@@ -1108,15 +1105,14 @@
 
                     <!-- Full File List for Selected Type (Files View - Step 3) -->
                     <div v-if="currentView === 'files' && selectedFileType" class="full-files-view">
-                        <div class="back-header">
-                            <button @click="selectedFileType = null; selectedFileTypeFiles = []" class="back-btn">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                                </svg>
-                                Back
-                            </button>
-                            <h2 class="view-title">{{ selectedFileType.toUpperCase() }} Files</h2>
+                        <div class="breadcrumb-header">
+                            <div class="breadcrumb">
+                                <span class="breadcrumb-item" @click="selectedEcosystem = null; selectedFileType = null">All Files</span>
+                                <span class="breadcrumb-separator">></span>
+                                <span class="breadcrumb-item" @click="selectedFileType = null; selectedFileTypeFiles = []">{{ selectedEcosystem }}</span>
+                                <span class="breadcrumb-separator">></span>
+                                <span class="breadcrumb-item active">{{ selectedFileType.toUpperCase().replace('.', '') }}</span>
+                            </div>
                             <span class="view-count">{{ selectedFileTypeFiles.length }} files</span>
                         </div>
 
@@ -1405,14 +1401,23 @@
                         const data = await response.json();
 
                         if (response.ok) {
-                            this.searchResults = (data.results || []).map(result => {
-                                // Find the matching file from our files array to get the correct upload date
+                            let results = (data.results || []).map(result => {
                                 const matchingFile = this.files.find(file => file.name === result.name);
                                 return {
                                     ...result,
                                     uploadDate: matchingFile ? matchingFile.uploadDate : result.uploadDate || result.upload_date || result.created_at
                                 };
                             });
+                            
+                            // Filter by current context
+                            if (this.selectedEcosystem && this.selectedEcosystem !== 'All') {
+                                results = results.filter(f => f.source === this.selectedEcosystem);
+                            }
+                            if (this.selectedFileType) {
+                                results = results.filter(f => ('.' + f.name.split('.').pop().toLowerCase()) === this.selectedFileType);
+                            }
+                            
+                            this.searchResults = results;
                         } else {
                             this.showToast(data.error || 'Search failed', 'error');
                         }
