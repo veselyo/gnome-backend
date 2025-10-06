@@ -1205,6 +1205,28 @@
                     } finally {
                         this.loading = false;
                     }
+                },
+
+                getFileType(filename) {
+                    const ext = filename.split('.').pop().toUpperCase();
+                    const typeMap = {
+                        'PDF': 'PDF', 'DOCX': 'DOC', 'DOC': 'DOC',
+                        'PPTX': 'PPT', 'PPT': 'PPT', 'XLSX': 'XLS',
+                        'XLS': 'XLS', 'PNG': 'IMG', 'JPG': 'IMG',
+                        'JPEG': 'IMG', 'TXT': 'TXT', 'MD': 'MD'
+                    };
+                    return typeMap[ext] || ext.substring(0, 3);
+                },
+
+                getFileColor(filename) {
+                    const ext = filename.split('.').pop().toLowerCase();
+                    const colorMap = {
+                        'pdf': '#dc2626', 'docx': '#2563eb', 'doc': '#2563eb',
+                        'pptx': '#ea580c', 'ppt': '#ea580c', 'xlsx': '#16a34a',
+                        'xls': '#16a34a', 'png': '#8b5cf6', 'jpg': '#8b5cf6',
+                        'jpeg': '#8b5cf6', 'txt': '#64748b', 'md': '#64748b'
+                    };
+                    return colorMap[ext] || '#6b7280';
                 }
             }
         }).mount('#app');
