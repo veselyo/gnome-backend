@@ -702,16 +702,6 @@
             color: #637282;
         }
 
-        .ecosystem-arrow {
-            font-size: 24px;
-            color: #673ED1;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .ecosystem-card:hover .ecosystem-arrow {
-            opacity: 1;
-        }
 
         .file-type-groups-view,
         .full-files-view {
@@ -726,36 +716,36 @@
             padding-bottom: 24px;
             border-bottom: 2px solid rgba(103, 62, 209, 0.1);
         }
-        
+
         .breadcrumb {
             display: flex;
             align-items: center;
             gap: 12px;
             font-size: 16px;
         }
-        
+
         .breadcrumb-item {
             color: #673ED1;
             cursor: pointer;
             transition: all 0.2s;
             font-weight: 500;
         }
-        
+
         .breadcrumb-item:hover {
             color: #764ba2;
             text-decoration: underline;
         }
-        
+
         .breadcrumb-item.active {
             color: #1c1c1c;
             cursor: default;
             font-weight: 600;
         }
-        
+
         .breadcrumb-item.active:hover {
             text-decoration: none;
         }
-        
+
         .breadcrumb-separator {
             color: #637282;
             font-weight: 400;
@@ -1037,8 +1027,8 @@
                                     style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                                     Disconnect
                                 </button>
+                            </div>
                         </div>
-                    </div>
 
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
                             Sync All Sources Now
@@ -1050,7 +1040,9 @@
                         <!-- All Files Card -->
                         <div class="ecosystem-card" @click="selectedEcosystem = 'All'">
                             <div class="ecosystem-icon">
-                                <div style="width: 64px; height: 64px; background-image: url('/static/gnome_logo_black.png'); background-size: contain; background-position: center; background-repeat: no-repeat; margin: 0 auto;"></div>
+                                <div
+                                    style="width: 64px; height: 64px; background-image: url('/static/gnome_logo_black.png'); background-size: contain; background-position: center; background-repeat: no-repeat; margin: 0 auto;">
+                                </div>
                             </div>
                             <h3 class="ecosystem-name">All Files</h3>
                             <div class="ecosystem-count">{{ files.length }} files</div>
@@ -1174,7 +1166,8 @@
                     </div>
 
                     <!-- Empty States -->
-                    <div v-if="currentView === 'search' && searchPerformed && displayFiles.length === 0 && !loading" class="empty-state">
+                    <div v-if="currentView === 'search' && searchPerformed && displayFiles.length === 0 && !loading"
+                        class="empty-state">
                         <div class="empty-state-icon">🔍</div>
                         <div class="empty-state-title">No results found</div>
                         <div class="empty-state-text">Try searching with different keywords</div>
