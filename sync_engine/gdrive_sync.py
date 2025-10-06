@@ -74,7 +74,7 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
                     },
                     SCOPES
                 )
-                self.credentials = flow.run_local_server(port=8081)  # Use 8081 instead of 8080
+                self.credentials = flow.run_local_server(port=0)  # Use port 0 for automatic port selection
                 self.save_tokens()
             
             # Build Drive service
