@@ -29,7 +29,7 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         /* Animated background gradient */
         body::before {
             content: '';
@@ -43,10 +43,15 @@
             pointer-events: none;
             z-index: 0;
         }
-        
+
         @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .app-container {
@@ -106,7 +111,7 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .nav-item::before {
             content: '';
             position: absolute;
@@ -138,7 +143,7 @@
             color: #673ED1;
             font-weight: 500;
         }
-        
+
         .nav-item.active::before {
             transform: scaleY(1);
         }
@@ -250,12 +255,12 @@
             box-shadow: 0 8px 24px rgba(103, 62, 209, 0.15), 0 0 0 4px rgba(103, 62, 209, 0.08);
             transform: translateY(-1px);
         }
-        
+
         .search-input::placeholder {
             color: #9ca3af;
             transition: color 0.3s;
         }
-        
+
         .search-input:focus::placeholder {
             color: #d1d5db;
         }
@@ -291,7 +296,7 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .btn-primary::before {
             content: '';
             position: absolute;
@@ -299,10 +304,10 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.5s;
         }
-        
+
         .btn-primary:hover::before {
             left: 100%;
         }
@@ -311,7 +316,7 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(103, 62, 209, 0.4);
         }
-        
+
         .btn-primary:active {
             transform: translateY(0);
         }
@@ -740,7 +745,8 @@
             <div class="sidebar">
                 <div class="nav-item" :class="{ active: currentView === 'files' }"
                     @click="currentView = 'files'; selectedEcosystem = null; selectedFileType = null; clearSearch()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 12px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="display: inline-block; vertical-align: middle; margin-right: 12px;">
                         <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
                         <polyline points="13 2 13 9 20 9"></polyline>
                     </svg>
@@ -748,9 +754,12 @@
                 </div>
                 <div class="nav-item" :class="{ active: currentView === 'settings' }"
                     @click="currentView = 'settings'; clearSearch()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 12px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="display: inline-block; vertical-align: middle; margin-right: 12px;">
                         <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M12 1v6m0 6v6m5.196-13.196l-4.242 4.242m0 5.656l-4.242 4.242M23 12h-6m-6 0H1m20.196-5.196l-4.242 4.242m0 5.656l-4.242 4.242"></path>
+                        <path
+                            d="M12 1v6m0 6v6m5.196-13.196l-4.242 4.242m0 5.656l-4.242 4.242M23 12h-6m-6 0H1m20.196-5.196l-4.242 4.242m0 5.656l-4.242 4.242">
+                        </path>
                     </svg>
                     Settings
                 </div>
@@ -839,46 +848,56 @@
                             <div class="ecosystem-count">{{ files.length }} files</div>
                             <div class="ecosystem-arrow">→</div>
                         </div>
-                        
+
                         <!-- Finder Card -->
                         <div class="ecosystem-card" @click="selectedEcosystem = 'Finder'">
                             <div class="ecosystem-icon">
-                                <div class="app-icon" style="width: 64px; height: 64px; background-image: url('/static/app_icons/finder_icon.png');"></div>
+                                <div class="app-icon"
+                                    style="width: 64px; height: 64px; background-image: url('/static/app_icons/finder_icon.png');">
+                                </div>
                             </div>
                             <h3 class="ecosystem-name">Finder</h3>
-                            <div class="ecosystem-count">{{ files.filter(f => f.source === 'Finder').length }} files</div>
+                            <div class="ecosystem-count">{{ files.filter(f => f.source === 'Finder').length }} files
+                            </div>
                             <div class="ecosystem-arrow">→</div>
                         </div>
-                        
+
                         <!-- Google Drive Card -->
                         <div class="ecosystem-card" @click="selectedEcosystem = 'Google Drive'">
                             <div class="ecosystem-icon">
-                                <div class="app-icon" style="width: 64px; height: 64px; background-image: url('/static/app_icons/gdrive_icon.png');"></div>
+                                <div class="app-icon"
+                                    style="width: 64px; height: 64px; background-image: url('/static/app_icons/gdrive_icon.png');">
+                                </div>
                             </div>
                             <h3 class="ecosystem-name">Google Drive</h3>
-                            <div class="ecosystem-count">{{ files.filter(f => f.source === 'Google Drive').length }} files</div>
+                            <div class="ecosystem-count">{{ files.filter(f => f.source === 'Google Drive').length }}
+                                files</div>
                             <div class="ecosystem-arrow">→</div>
                         </div>
                     </div>
 
                     <!-- File Types View (Files View - Step 2) -->
-                    <div v-if="currentView === 'files' && selectedEcosystem && !selectedFileType" class="file-type-groups-view">
+                    <div v-if="currentView === 'files' && selectedEcosystem && !selectedFileType"
+                        class="file-type-groups-view">
                         <div class="back-header">
                             <button @click="selectedEcosystem = null" class="back-btn">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M19 12H5M12 19l-7-7 7-7" />
                                 </svg>
                                 Back
                             </button>
                             <h2 class="view-title">{{ selectedEcosystem }}</h2>
                             <span class="view-count">{{ ecosystemFiles.length }} files</span>
                         </div>
-                        
+
                         <!-- Show file type groups here -->
                         <div class="file-types-grid">
-                            <div v-for="(files, ext) in filesByType" :key="ext" class="file-type-card" @click="selectedFileType = ext; selectedFileTypeFiles = files">
+                            <div v-for="(files, ext) in filesByType" :key="ext" class="file-type-card"
+                                @click="selectedFileType = ext; selectedFileTypeFiles = files">
                                 <div class="type-icon-large" :style="{ background: getGradientForExt(ext) }">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white"
+                                        stroke-width="2.5">
                                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                         <polyline points="14 2 14 8 20 8"></polyline>
                                     </svg>
@@ -894,19 +913,23 @@
                     <div v-if="currentView === 'files' && selectedFileType" class="full-files-view">
                         <div class="back-header">
                             <button @click="selectedFileType = null; selectedFileTypeFiles = []" class="back-btn">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M19 12H5M12 19l-7-7 7-7" />
                                 </svg>
                                 Back
                             </button>
                             <h2 class="view-title">{{ selectedFileType.toUpperCase() }} Files</h2>
                             <span class="view-count">{{ selectedFileTypeFiles.length }} files</span>
                         </div>
-                        
+
                         <div class="file-grid-full">
-                            <div v-for="file in selectedFileTypeFiles" :key="file.name" class="modern-file-card" @click="handleFileClick(file)">
-                                <div class="modern-file-icon" :style="{ background: getGradientForExt(selectedFileType) }">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                            <div v-for="file in selectedFileTypeFiles" :key="file.name" class="modern-file-card"
+                                @click="handleFileClick(file)">
+                                <div class="modern-file-icon"
+                                    :style="{ background: getGradientForExt(selectedFileType) }">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white"
+                                        stroke-width="2.5">
                                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                         <polyline points="14 2 14 8 20 8"></polyline>
                                     </svg>
@@ -1344,17 +1367,17 @@
 
                         if (response.ok) {
                             this.showToast(`${sourceName} disconnected`, 'success');
-                            
+
                             // Update app state immediately
                             const app = this.applications.find(a => a.name === sourceName);
                             if (app) {
                                 app.connected = false;  // Show "Not connected"
                                 app.fileCount = 0;      // Reset count
                             }
-                            
+
                             // Refresh file list to remove disconnected source files
                             await this.fetchFiles();
-                            
+
                             // Force UI update
                             this.$forceUpdate();
                         } else {
@@ -1411,7 +1434,7 @@
                     };
                     return colorMap[ext] || '#6b7280';
                 },
-                
+
                 getGradientForExt(ext) {
                     const e = ext.toLowerCase().replace('.', '');
                     const gradients = {
