@@ -183,14 +183,21 @@ class SyncManager:
             return False
     
     def disconnect_source(self, source_name: str):
-        """Disconnect a cloud source."""
+        """Disconnect a cloud source and remove its files."""
         if source_name == 'Finder':
             logger.warning("Cannot disconnect Finder")
             return
         
+        # Delete OAuth tokens
         service_name = source_name.lower().replace(' ', '_')
         self.db.delete_oauth_token(service_name)
-        logger.info(f"Disconnected {source_name}")
+        
+        # Mark all files from this source as deleted
+        cursor = self.db.conn.cursor()
+        cursor.execute("UPDATE files SET is_deleted = 1 WHERE source = ?", (source_name,))
+        self.db.conn.commit()
+        
+        logger.info(f"Disconnected {source_name} and removed {cursor.rowcount} files")
     
     def get_sync_status(self) -> Dict:
         """Get sync status for all sources."""
