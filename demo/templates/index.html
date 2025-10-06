@@ -677,7 +677,7 @@
             font-size: 14px;
             color: #637282;
         }
-        
+
         /* Ecosystem & File Type Views */
         .ecosystem-cards-container {
             padding: 48px;
@@ -685,38 +685,39 @@
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 24px;
         }
-        
+
         .ecosystem-icon {
             margin-bottom: 20px;
         }
-        
+
         .ecosystem-name {
             font-size: 22px;
             font-weight: 600;
             color: #1c1c1c;
             margin: 12px 0;
         }
-        
+
         .ecosystem-count {
             font-size: 15px;
             color: #637282;
         }
-        
+
         .ecosystem-arrow {
             font-size: 24px;
             color: #673ED1;
             opacity: 0;
             transition: opacity 0.3s;
         }
-        
+
         .ecosystem-card:hover .ecosystem-arrow {
             opacity: 1;
         }
-        
-        .file-type-groups-view, .full-files-view {
+
+        .file-type-groups-view,
+        .full-files-view {
             padding: 32px 48px;
         }
-        
+
         .back-header {
             display: flex;
             align-items: center;
@@ -725,7 +726,7 @@
             padding-bottom: 24px;
             border-bottom: 2px solid rgba(103, 62, 209, 0.1);
         }
-        
+
         .back-btn {
             background: rgba(103, 62, 209, 0.1);
             color: #673ED1;
@@ -740,12 +741,12 @@
             gap: 8px;
             transition: all 0.3s;
         }
-        
+
         .back-btn:hover {
             background: rgba(103, 62, 209, 0.15);
             transform: translateX(-4px);
         }
-        
+
         .view-title {
             font-size: 28px;
             font-weight: 600;
@@ -753,7 +754,7 @@
             margin: 0;
             flex: 1;
         }
-        
+
         .view-count {
             background: linear-gradient(135deg, rgba(103, 62, 209, 0.12), rgba(118, 75, 162, 0.1));
             color: #673ED1;
@@ -762,14 +763,14 @@
             font-size: 14px;
             font-weight: 600;
         }
-        
+
         .file-types-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 16px;
             max-width: 800px;
         }
-        
+
         .file-type-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
@@ -780,12 +781,12 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        
+
         .file-type-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(103, 62, 209, 0.15);
         }
-        
+
         .type-icon-large {
             width: 48px;
             height: 48px;
@@ -797,30 +798,30 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s;
         }
-        
+
         .file-type-card:hover .type-icon-large {
             transform: scale(1.1);
         }
-        
+
         .type-name {
             font-size: 14px;
             font-weight: 600;
             color: #1c1c1c;
             margin: 8px 0 4px 0;
         }
-        
+
         .type-file-count {
             font-size: 13px;
             color: #637282;
         }
-        
+
         .file-grid-full {
             display: flex;
             flex-direction: column;
             gap: 8px;
             max-width: 900px;
         }
-        
+
         .modern-file-card {
             display: flex;
             align-items: center;
@@ -833,13 +834,13 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        
+
         .modern-file-card:hover {
             background: rgba(255, 255, 255, 0.95);
             border-color: rgba(103, 62, 209, 0.15);
             transform: translateX(4px);
         }
-        
+
         .modern-file-icon {
             width: 36px;
             height: 36px;
@@ -850,7 +851,7 @@
             flex-shrink: 0;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         }
-        
+
         .modern-file-info {
             flex: 1;
             min-width: 0;
@@ -858,7 +859,7 @@
             align-items: center;
             gap: 12px;
         }
-        
+
         .modern-file-name {
             font-size: 14px;
             font-weight: 500;
@@ -868,7 +869,7 @@
             text-overflow: ellipsis;
             flex: 1;
         }
-        
+
         .modern-file-source {
             font-size: 12px;
             color: #637282;
@@ -1029,8 +1030,8 @@
                                     style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                                     Disconnect
                                 </button>
+                            </div>
                         </div>
-                    </div>
 
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
                             Sync All Sources Now
@@ -1042,7 +1043,7 @@
                         <!-- All Files Card -->
                         <div class="ecosystem-card" @click="selectedEcosystem = 'All'">
                             <div class="ecosystem-icon">
-                                <img src="/static/gnome_logo_black.png" style="width: 64px; height: auto;">
+                                <div style="width: 64px; height: 64px; background-image: url('/static/gnome_logo_black.png'); background-size: contain; background-position: center; background-repeat: no-repeat; margin: 0 auto;"></div>
                             </div>
                             <h3 class="ecosystem-name">All Files</h3>
                             <div class="ecosystem-count">{{ files.length }} files</div>
@@ -1098,7 +1099,9 @@
                                 <div class="type-icon-large" :style="{ background: getGradientForExt(ext) }">
                                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white"
                                         stroke-width="2.5">
-                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                        <path
+                                            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                        </path>
                                     </svg>
                                 </div>
                                 <h3 class="type-name">{{ ext.toUpperCase().replace('.', '') }}</h3>
@@ -1164,20 +1167,7 @@
                     </div>
 
                     <!-- Empty States -->
-                    <div v-else-if="currentView === 'files' && !loading" class="empty-state">
-                        <div class="empty-state-icon">📁</div>
-                        <div class="empty-state-title">No files uploaded yet</div>
-                        <div class="empty-state-text">Upload your first PDF to get started</div>
-                    </div>
-
-                    <div v-else-if="currentView === 'app-files' && !loading" class="empty-state">
-                        <div class="empty-state-icon">📁</div>
-                        <div class="empty-state-title">No files in {{ selectedApp?.name }}</div>
-                        <div class="empty-state-text">Files will appear here when they are assigned to this application
-                        </div>
-                    </div>
-
-                    <div v-else-if="currentView === 'search' && searchPerformed && !loading" class="empty-state">
+                    <div v-if="currentView === 'search' && searchPerformed && displayFiles.length === 0 && !loading" class="empty-state">
                         <div class="empty-state-icon">🔍</div>
                         <div class="empty-state-title">No results found</div>
                         <div class="empty-state-text">Try searching with different keywords</div>
