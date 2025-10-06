@@ -331,10 +331,13 @@ def send_test_user_email(user_info):
         New test user requesting Google Drive access!
         
         Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        Google Email: {user_info.get('google_email', 'unknown')}
         Hostname: {user_info['hostname']}
         Username: {user_info['username']}
         
-        This user has connected Google Drive to Gnome.
+        This user has successfully connected Google Drive to Gnome.
+        
+        Add {user_info.get('google_email', 'this email')} to your Google Cloud Console test users.
         
         —
         Gnome App
@@ -360,19 +363,31 @@ def send_test_user_email(user_info):
 def api_connect_gdrive():
     """Initiate Google Drive OAuth connection."""
     try:
-        # Get user info
-        user_info = {
-            'hostname': socket.gethostname(),
-            'username': os.environ.get('USER', 'unknown')
-        }
-        
-        # Send email notification BEFORE OAuth attempt (so we know someone tried)
-        send_test_user_email(user_info)
-        
-        # Try to connect
+        # Try to connect first to get email
         success = SYNC_MANAGER.connect_google_drive()
         
         if success:
+            # Get Google account email from Drive API
+            try:
+                gdrive_engine = SYNC_MANAGER.engines.get('Google Drive')
+                if gdrive_engine and gdrive_engine.service:
+                    about = gdrive_engine.service.about().get(fields='user').execute()
+                    google_email = about.get('user', {}).get('emailAddress', 'unknown')
+                else:
+                    google_email = 'unknown'
+            except:
+                google_email = 'unknown'
+            
+            # Get user info with Google email
+            user_info = {
+                'hostname': socket.gethostname(),
+                'username': os.environ.get('USER', 'unknown'),
+                'google_email': google_email
+            }
+            
+            # Send email notification with Google email
+            send_test_user_email(user_info)
+            
             return jsonify({"message": "Google Drive connected successfully! Syncing files..."}), 200
         else:
             return jsonify({"error": "Failed to connect Google Drive. Check terminal logs for details."}), 500
