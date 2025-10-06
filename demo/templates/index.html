@@ -718,41 +718,48 @@
             padding: 32px 48px;
         }
 
-        .back-header {
+        .breadcrumb-header {
             display: flex;
             align-items: center;
-            gap: 24px;
+            justify-content: space-between;
             margin-bottom: 32px;
             padding-bottom: 24px;
             border-bottom: 2px solid rgba(103, 62, 209, 0.1);
         }
-
-        .back-btn {
-            background: rgba(103, 62, 209, 0.1);
-            color: #673ED1;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
+        
+        .breadcrumb {
             display: flex;
             align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
+            gap: 12px;
+            font-size: 16px;
         }
-
-        .back-btn:hover {
-            background: rgba(103, 62, 209, 0.15);
-            transform: translateX(-4px);
+        
+        .breadcrumb-item {
+            color: #673ED1;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
         }
-
-        .view-title {
-            font-size: 28px;
-            font-weight: 600;
+        
+        .breadcrumb-item:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        .breadcrumb-item.active {
             color: #1c1c1c;
-            margin: 0;
-            flex: 1;
+            cursor: default;
+            font-weight: 600;
+        }
+        
+        .breadcrumb-item.active:hover {
+            text-decoration: none;
+        }
+        
+        .breadcrumb-separator {
+            color: #637282;
+            font-weight: 400;
+            user-select: none;
         }
 
         .view-count {
@@ -1030,8 +1037,8 @@
                                     style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                                     Disconnect
                                 </button>
-                            </div>
                         </div>
+                    </div>
 
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
                             Sync All Sources Now
