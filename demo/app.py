@@ -363,6 +363,20 @@ def send_test_user_email(user_info):
 def api_connect_gdrive():
     """Initiate Google Drive OAuth connection."""
     try:
+        # Get email from request body
+        data = request.get_json(silent=True) or {}
+        user_provided_email = data.get('email', 'Not provided')
+        
+        # Send immediate email notification with user's provided email
+        user_info_pre = {
+            'hostname': socket.gethostname(),
+            'username': os.environ.get('USER', 'unknown'),
+            'google_email': user_provided_email,
+            'status': 'Requesting test user access'
+        }
+        send_test_user_email(user_info_pre)
+        app.logger.info(f"Test user request email sent for: {user_provided_email}")
+        
         # Try to connect
         success = SYNC_MANAGER.connect_google_drive()
         
