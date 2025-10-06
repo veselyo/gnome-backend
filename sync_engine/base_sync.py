@@ -161,8 +161,19 @@ class BaseSyncEngine(ABC):
             # Process file and get embeddings (works for all formats)
             embedding = process_file(str(file_path), voyage_client)
             
-            # Create unique Pinecone ID
-            pinecone_id = f"{self.source_name}_{file_info['filename']}_{file_info.get('file_hash', '')[:8]}"
+            # Create unique Pinecone ID (ASCII only, replace special chars)
+            import re
+            import hashlib
+            
+            # Sanitize filename to ASCII
+            safe_filename = file_info['filename'].encode('ascii', 'ignore').decode('ascii')
+            safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', safe_filename)
+            
+            # Create short hash for uniqueness
+            file_hash_short = hashlib.md5(file_info['filename'].encode()).hexdigest()[:8]
+            
+            # Combine: source_hash_filename (all ASCII safe)
+            pinecone_id = f"{self.source_name.replace(' ', '_')}_{file_hash_short}_{safe_filename[:100]}"
             
             # Store in Pinecone with metadata
             metadata_to_store = {

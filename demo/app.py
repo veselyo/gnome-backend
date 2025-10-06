@@ -144,11 +144,25 @@ def api_search():
             
             if db_file:
                 # Use database info (most reliable)
+                metadata = db_file.get('metadata', {})
+                if isinstance(metadata, str):
+                    import json
+                    try:
+                        metadata = json.loads(metadata)
+                    except:
+                        metadata = {}
+                
+                # Get cloudUrl from metadata
+                cloud_url = metadata.get('webUrl') or metadata.get('webViewLink')
+                if not cloud_url and db_file['source'] == 'Google Drive':
+                    # Construct Google Drive URL from file_path (drive ID)
+                    cloud_url = f"https://drive.google.com/file/d/{db_file['file_path']}/view"
+                
                 result = {
                     "name": db_file['filename'],
                     "similarity": match.get("score", 0),
                     "source": db_file['source'],
-                    "cloudUrl": db_file.get('metadata', {}).get('webUrl') if isinstance(db_file.get('metadata'), dict) else None,
+                    "cloudUrl": cloud_url,
                     "file_path": db_file['file_path'],
                     "uploadDate": db_file.get('indexed_at'),
                     "indexed": True
