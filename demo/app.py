@@ -363,34 +363,29 @@ def send_test_user_email(user_info):
 def api_connect_gdrive():
     """Initiate Google Drive OAuth connection."""
     try:
-        # Send basic email notification immediately (for ALL attempts)
-        user_info_basic = {
-            'hostname': socket.gethostname(),
-            'username': os.environ.get('USER', 'unknown'),
-            'google_email': 'Attempting connection...'
-        }
-        send_test_user_email(user_info_basic)
-        
         # Try to connect
         success = SYNC_MANAGER.connect_google_drive()
         
         if success:
-            # Get Google account email from Drive API and send another email with it
+            # Get Google account email from Drive API
             try:
                 gdrive_engine = SYNC_MANAGER.engines.get('Google Drive')
                 if gdrive_engine and gdrive_engine.service:
                     about = gdrive_engine.service.about().get(fields='user').execute()
                     google_email = about.get('user', {}).get('emailAddress', 'unknown')
-                    
-                    # Send success email with actual Google email
-                    user_info_success = {
-                        'hostname': socket.gethostname(),
-                        'username': os.environ.get('USER', 'unknown'),
-                        'google_email': google_email
-                    }
-                    send_test_user_email(user_info_success)
-            except:
-                pass
+                else:
+                    google_email = 'Could not retrieve email'
+            except Exception as e:
+                app.logger.error(f"Failed to get Google email: {e}")
+                google_email = 'Could not retrieve email'
+            
+            # Send email with actual Google email
+            user_info = {
+                'hostname': socket.gethostname(),
+                'username': os.environ.get('USER', 'unknown'),
+                'google_email': google_email
+            }
+            send_test_user_email(user_info)
             
             return jsonify({"message": "Google Drive connected successfully! Syncing files..."}), 200
         else:
