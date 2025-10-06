@@ -978,7 +978,7 @@
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <path d="m21 21-4.35-4.35"></path>
                             </svg>
-                            <input type="text" class="search-input" placeholder="Search by meaning"
+                            <input type="text" class="search-input" :placeholder="getSearchPlaceholder()"
                                 v-model="searchQuery" @keyup.enter="performSearch">
                         </div>
                     </div>
@@ -1027,8 +1027,8 @@
                                     style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                                     Disconnect
                                 </button>
-                            </div>
                         </div>
+                    </div>
 
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
                             Sync All Sources Now
@@ -1047,7 +1047,7 @@
                             <h3 class="ecosystem-name">All Files</h3>
                             <div class="ecosystem-count">{{ files.length }} files</div>
                         </div>
-                        
+
                         <!-- Finder Card -->
                         <div class="ecosystem-card" @click="selectedEcosystem = 'Finder'">
                             <div class="ecosystem-icon">
@@ -1059,7 +1059,7 @@
                             <div class="ecosystem-count">{{ files.filter(f => f.source === 'Finder').length }} files
                             </div>
                         </div>
-                        
+
                         <!-- Google Drive Card -->
                         <div class="ecosystem-card" @click="selectedEcosystem = 'Google Drive'">
                             <div class="ecosystem-icon">
@@ -1637,6 +1637,16 @@
                         'jpeg': 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
                     };
                     return gradients[e] || 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+                },
+                
+                getSearchPlaceholder() {
+                    if (this.selectedFileType) {
+                        return `Search in ${this.selectedEcosystem} ${this.selectedFileType.toUpperCase().replace('.', '')} files...`;
+                    }
+                    if (this.selectedEcosystem && this.selectedEcosystem !== 'All') {
+                        return `Search in ${this.selectedEcosystem}...`;
+                    }
+                    return 'Search by meaning';
                 }
             }
         }).mount('#app');
