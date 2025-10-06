@@ -91,9 +91,16 @@ class BaseSyncEngine(ABC):
             
             for i, file_info in enumerate(files):
                 try:
-                    # Check if already indexed
+                    # Check if already indexed (by hash OR by filename+source for cloud)
                     file_hash = file_info.get('file_hash')
                     if file_hash and self.db.get_file_by_hash(file_hash):
+                        skipped_count += 1
+                        continue
+                    
+                    # Also check by filename+source to avoid duplicate names
+                    existing = next((f for f in self.db.get_files_by_source(self.source_name) 
+                                   if f['filename'] == file_info['filename']), None)
+                    if existing:
                         skipped_count += 1
                         continue
                     
