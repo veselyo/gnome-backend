@@ -9,6 +9,11 @@ import traceback
 import sys
 import secrets
 import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime
+import socket
 
 # Ensure semantic_search package is importable
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -303,14 +308,70 @@ def api_discover():
         return jsonify({"error": str(exc)}), 500
 
 
+def send_test_user_email(user_info):
+    """Send email notification for new test user request."""
+    try:
+        # Gmail SMTP configuration (you'll need to set up app password)
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = os.environ.get('GMAIL_USER', 'gnome.app.notifications@gmail.com')
+        sender_password = os.environ.get('GMAIL_APP_PASSWORD', '')
+        
+        if not sender_password:
+            app.logger.warning("No Gmail app password configured - skipping email notification")
+            return False
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = 'kennethfrisard05@gmail.com'
+        msg['Subject'] = f'🔔 New Gnome Test User Request - {user_info["hostname"]}'
+        
+        body = f"""
+        New test user requesting Google Drive access!
+        
+        Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        Hostname: {user_info['hostname']}
+        Username: {user_info['username']}
+        
+        This user has connected Google Drive to Gnome.
+        
+        —
+        Gnome App
+        """
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Send email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+        
+        app.logger.info("Test user email sent successfully!")
+        return True
+        
+    except Exception as e:
+        app.logger.error(f"Failed to send email: {e}")
+        return False
+
+
 @app.route("/api/connect/google-drive", methods=["POST"])
 def api_connect_gdrive():
     """Initiate Google Drive OAuth connection."""
     try:
+        # Get user info
+        user_info = {
+            'hostname': socket.gethostname(),
+            'username': os.environ.get('USER', 'unknown')
+        }
+        
         # Just try to connect - let errors happen naturally
         success = SYNC_MANAGER.connect_google_drive()
         
         if success:
+            # Send email notification
+            send_test_user_email(user_info)
             return jsonify({"message": "Google Drive connected successfully! Syncing files..."}), 200
         else:
             return jsonify({"error": "Failed to connect Google Drive. Check terminal logs for details."}), 500
