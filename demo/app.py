@@ -359,24 +359,34 @@ def send_test_user_email(user_info):
         return False
 
 
+@app.route("/api/request-test-user", methods=["POST"])
+def api_request_test_user():
+    """Handle test user access request after OAuth failure."""
+    try:
+        data = request.get_json()
+        email = data.get('email', 'Not provided')
+        source = data.get('source', 'Unknown')
+        
+        # Send email notification
+        user_info = {
+            'hostname': socket.gethostname(),
+            'username': os.environ.get('USER', 'unknown'),
+            'google_email': email,
+            'status': 'Requesting test user access (after access_denied)'
+        }
+        send_test_user_email(user_info)
+        app.logger.info(f"Test user request email sent for: {email} (source: {source})")
+        
+        return jsonify({"message": "Test user request sent successfully"}), 200
+    except Exception as exc:
+        app.logger.error(f"Failed to send test user request: {exc}")
+        return jsonify({"error": str(exc)}), 500
+
+
 @app.route("/api/connect/google-drive", methods=["POST"])
 def api_connect_gdrive():
     """Initiate Google Drive OAuth connection."""
     try:
-        # Get email from request body
-        data = request.get_json(silent=True) or {}
-        user_provided_email = data.get('email', 'Not provided')
-        
-        # Send immediate email notification with user's provided email
-        user_info_pre = {
-            'hostname': socket.gethostname(),
-            'username': os.environ.get('USER', 'unknown'),
-            'google_email': user_provided_email,
-            'status': 'Requesting test user access'
-        }
-        send_test_user_email(user_info_pre)
-        app.logger.info(f"Test user request email sent for: {user_provided_email}")
-        
         # Try to connect
         success = SYNC_MANAGER.connect_google_drive()
         
@@ -409,6 +419,14 @@ def api_connect_gdrive():
         app.logger.error(f"Google Drive connection failed: {exc}")
         import traceback
         app.logger.error(traceback.format_exc())
+        
+        # Check if this is an access_denied error (user not approved as test user)
+        if "access_denied" in str(exc).lower():
+            return jsonify({
+                "error": "Access denied - test user approval required",
+                "code": "access_denied"
+            }), 403
+        
         return jsonify({"error": f"Connection error: {str(exc)}"}), 500
 
 

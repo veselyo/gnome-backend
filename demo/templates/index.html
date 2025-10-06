@@ -1079,20 +1079,6 @@
                                         <div style="color: #10b981; font-size: 14px;" v-if="app.connected">✓ Connected •
                                             {{ app.fileCount }} files</div>
                                         <div style="color: #637282; font-size: 14px;" v-else>Not connected</div>
-                                        
-                                        <!-- Email input for Google Drive -->
-                                        <div v-if="!app.connected && app.name === 'Google Drive'" style="margin-top: 12px;">
-                                            <input type="email" 
-                                                v-model="userEmail" 
-                                                placeholder="Enter your Gmail address"
-                                                style="width: 280px; padding: 8px 12px; border: 2px solid rgba(103, 62, 209, 0.2); border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.3s;"
-                                                @focus="$event.target.style.borderColor='#673ED1'"
-                                                @blur="$event.target.style.borderColor='rgba(103, 62, 209, 0.2)'"
-                                                @keyup.enter="connectSource(app.name)">
-                                            <div style="font-size: 12px; color: #637282; margin-top: 6px; max-width: 280px;">
-                                                📧 We'll send this to the developer to add you as a test user
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                                 <button v-if="!app.connected && app.name !== 'Finder'" @click="connectSource(app.name)"
@@ -1104,8 +1090,8 @@
                                     style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                                     Disconnect
                                 </button>
+                            </div>
                         </div>
-                    </div>
 
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
                             Sync All Sources Now
@@ -1282,9 +1268,9 @@
                         <div class="empty-state-text">Enter a natural language query in the search bar above</div>
                     </div>
 
-                    </div>
                 </div>
             </div>
+        </div>
 
         <!-- Bottom Progress Bar (instead of spinner) -->
         <div v-if="loading" class="progress-bar-container">
@@ -1614,12 +1600,6 @@
                 },
 
                 async connectSource(sourceName) {
-                    // Validate email for Google Drive
-                    if (sourceName === 'Google Drive' && !this.userEmail) {
-                        this.showToast('Please enter your Gmail address first', 'error');
-                        return;
-                    }
-                    
                     this.loading = true;
                     this.loadingMessage = `Connecting to ${sourceName}...`;
 
@@ -1642,26 +1622,28 @@
                             if (app) app.connected = true;
                             // Trigger sync
                             this.triggerSync();
-                        } else if (response.status === 403 && data.action === 'request_access') {
-                            // Access denied - ask user to request access
-                            const email = prompt(`${sourceName} requires approval.\n\nEnter your ${sourceName === 'Google Drive' ? 'Gmail' : 'Microsoft'} email to request access:`);
-
+                        } else if (response.status === 403 || (data.code === 'access_denied')) {
+                            // Access denied - ask for email to request access
+                            this.loading = false;
+                            const email = prompt(`⚠️ Access Blocked\n\nGnome is currently in testing mode and requires developer approval.\n\nPlease enter your Gmail address to request test user access:\n\n(The developer will be notified and will add you as a test user)`);
+                            
                             if (email && email.includes('@')) {
-                                // Send access request
-                                const requestResponse = await fetch(endpoint, {
+                                this.loading = true;
+                                this.loadingMessage = 'Sending request...';
+                                // Send test user request
+                                const requestResponse = await fetch('/api/request-test-user', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        request_access: true,
-                                        email: email
+                                    body: JSON.stringify({ 
+                                        email: email,
+                                        source: sourceName
                                     })
                                 });
-
-                                const requestData = await requestResponse.json();
-                                if (requestResponse.ok || requestResponse.status === 202) {
-                                    this.showToast(`Access requested! Admin will add ${email} as a test user.`, 'success');
+                                
+                                if (requestResponse.ok) {
+                                    this.showToast(`✅ Request sent to developer!\n\nYou will be notified once ${email} is approved.`, 'success');
                                 } else {
-                                    this.showToast('Failed to request access', 'error');
+                                    this.showToast('Failed to send request', 'error');
                                 }
                             }
                         } else {
