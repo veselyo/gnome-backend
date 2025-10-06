@@ -739,7 +739,7 @@
             <!-- Sidebar -->
             <div class="sidebar">
                 <div class="nav-item" :class="{ active: currentView === 'files' }"
-                    @click="currentView = 'files'; selectedSource = null; clearSearch()">
+                    @click="currentView = 'files'; selectedEcosystem = null; selectedFileType = null; clearSearch()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 12px;">
                         <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
                         <polyline points="13 2 13 9 20 9"></polyline>
@@ -828,23 +828,99 @@
                         </button>
                     </div>
 
-                    <!-- Applications Grid -->
-                    <div v-if="currentView === 'applications'" class="applications-grid">
-                        <div v-for="app in applicationsWithCounts" :key="app.name" class="app-card"
-                            @click="app.connected || app.name === 'Finder' ? viewAppFiles(app) : connectSource(app.name)">
-                            <div class="app-icon" :style="{ backgroundImage: app.icon }"></div>
-                            <div class="app-name">{{ app.name }}</div>
-                            <div class="app-files-count">{{ app.fileCount }} {{ app.fileCount === 1 ? 'file' : 'files'
-                                }}</div>
-                            <div v-if="!app.connected && app.name !== 'Finder'"
-                                style="font-size: 12px; color: #673ED1; margin-top: 4px; font-weight: 500;">
-                                → Connect
+                    <!-- Ecosystem Cards (Files View - Step 1) -->
+                    <div v-if="currentView === 'files' && !selectedEcosystem" class="ecosystem-cards-container">
+                        <!-- All Files Card -->
+                        <div class="ecosystem-card" @click="selectedEcosystem = 'All'">
+                            <div class="ecosystem-icon">
+                                <img src="/static/gnome_logo_black.png" style="width: 64px; height: auto;">
+                            </div>
+                            <h3 class="ecosystem-name">All Files</h3>
+                            <div class="ecosystem-count">{{ files.length }} files</div>
+                            <div class="ecosystem-arrow">→</div>
+                        </div>
+                        
+                        <!-- Finder Card -->
+                        <div class="ecosystem-card" @click="selectedEcosystem = 'Finder'">
+                            <div class="ecosystem-icon">
+                                <div class="app-icon" style="width: 64px; height: 64px; background-image: url('/static/app_icons/finder_icon.png');"></div>
+                            </div>
+                            <h3 class="ecosystem-name">Finder</h3>
+                            <div class="ecosystem-count">{{ files.filter(f => f.source === 'Finder').length }} files</div>
+                            <div class="ecosystem-arrow">→</div>
+                        </div>
+                        
+                        <!-- Google Drive Card -->
+                        <div class="ecosystem-card" @click="selectedEcosystem = 'Google Drive'">
+                            <div class="ecosystem-icon">
+                                <div class="app-icon" style="width: 64px; height: 64px; background-image: url('/static/app_icons/gdrive_icon.png');"></div>
+                            </div>
+                            <h3 class="ecosystem-name">Google Drive</h3>
+                            <div class="ecosystem-count">{{ files.filter(f => f.source === 'Google Drive').length }} files</div>
+                            <div class="ecosystem-arrow">→</div>
+                        </div>
+                    </div>
+
+                    <!-- File Types View (Files View - Step 2) -->
+                    <div v-if="currentView === 'files' && selectedEcosystem && !selectedFileType" class="file-type-groups-view">
+                        <div class="back-header">
+                            <button @click="selectedEcosystem = null" class="back-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                </svg>
+                                Back
+                            </button>
+                            <h2 class="view-title">{{ selectedEcosystem }}</h2>
+                            <span class="view-count">{{ ecosystemFiles.length }} files</span>
+                        </div>
+                        
+                        <!-- Show file type groups here -->
+                        <div class="file-types-grid">
+                            <div v-for="(files, ext) in filesByType" :key="ext" class="file-type-card" @click="selectedFileType = ext; selectedFileTypeFiles = files">
+                                <div class="type-icon-large" :style="{ background: getGradientForExt(ext) }">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                    </svg>
+                                </div>
+                                <h3 class="type-name">{{ ext.toUpperCase() }} Files</h3>
+                                <div class="type-file-count">{{ files.length }} files</div>
+                                <div class="type-arrow">→</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- File Table -->
-                    <div v-if="currentView !== 'applications' && displayFiles.length > 0" class="file-table"
+                    <!-- Full File List for Selected Type (Files View - Step 3) -->
+                    <div v-if="currentView === 'files' && selectedFileType" class="full-files-view">
+                        <div class="back-header">
+                            <button @click="selectedFileType = null; selectedFileTypeFiles = []" class="back-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                </svg>
+                                Back
+                            </button>
+                            <h2 class="view-title">{{ selectedFileType.toUpperCase() }} Files</h2>
+                            <span class="view-count">{{ selectedFileTypeFiles.length }} files</span>
+                        </div>
+                        
+                        <div class="file-grid-full">
+                            <div v-for="file in selectedFileTypeFiles" :key="file.name" class="modern-file-card" @click="handleFileClick(file)">
+                                <div class="modern-file-icon" :style="{ background: getGradientForExt(selectedFileType) }">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="modern-file-info">
+                                    <div class="modern-file-name">{{ file.name }}</div>
+                                    <div class="modern-file-source">{{ file.source }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search Results Table -->
+                    <div v-if="currentView === 'search' && displayFiles.length > 0" class="file-table"
                         :class="{ 'app-files-view': currentView === 'app-files' }">
                         <div class="file-table-header">
                             <div class="col-name">Name</div>
@@ -934,7 +1010,10 @@
                         visible: false,
                         message: '',
                         type: 'success'
-                    }
+                    },
+                    selectedEcosystem: null,
+                    selectedFileType: null,
+                    selectedFileTypeFiles: []
                 };
             },
             computed: {
@@ -942,17 +1021,28 @@
                     if (this.currentView === 'search') {
                         return this.searchResults;
                     }
-                    if (this.currentView === 'app-files' && this.selectedApp) {
-                        // Filter files by source (from backend)
-                        return this.files.filter(file => file.source === this.selectedApp.name);
-                    }
                     return this.files;
+                },
+                ecosystemFiles() {
+                    if (this.selectedEcosystem === 'All') {
+                        return this.files;
+                    }
+                    return this.files.filter(f => f.source === this.selectedEcosystem);
+                },
+                filesByType() {
+                    const grouped = {};
+                    this.ecosystemFiles.forEach(file => {
+                        const ext = ('.' + file.name.split('.').pop().toLowerCase());
+                        if (!grouped[ext]) {
+                            grouped[ext] = [];
+                        }
+                        grouped[ext].push(file);
+                    });
+                    return grouped;
                 },
                 applicationsWithCounts() {
                     return this.applications.map(app => {
-                        // Count files from this source
                         const fileCount = this.files.filter(file => file.source === app.name).length;
-
                         return {
                             ...app,
                             fileCount: fileCount
@@ -1320,6 +1410,25 @@
                         'jpeg': '#8b5cf6', 'txt': '#64748b', 'md': '#64748b'
                     };
                     return colorMap[ext] || '#6b7280';
+                },
+                
+                getGradientForExt(ext) {
+                    const e = ext.toLowerCase().replace('.', '');
+                    const gradients = {
+                        'pdf': 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+                        'doc': 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
+                        'docx': 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
+                        'txt': 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
+                        'md': 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
+                        'ppt': 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                        'pptx': 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                        'xls': 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                        'xlsx': 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                        'png': 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                        'jpg': 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                        'jpeg': 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+                    };
+                    return gradients[e] || 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
                 }
             }
         }).mount('#app');
