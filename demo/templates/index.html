@@ -690,11 +690,11 @@
             margin-bottom: 20px;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
+
         .ecosystem-card:hover .ecosystem-icon {
             transform: scale(1.05);
         }
-        
+
         .ecosystem-name {
             font-size: 22px;
             font-weight: 600;
@@ -702,17 +702,17 @@
             margin: 12px 0;
             transition: color 0.3s;
         }
-        
+
         .ecosystem-card:hover .ecosystem-name {
             color: #673ED1;
         }
-        
+
         .ecosystem-count {
             font-size: 15px;
             color: #637282;
             transition: color 0.3s;
         }
-        
+
         .ecosystem-card:hover .ecosystem-count {
             color: #673ED1;
         }
@@ -1046,8 +1046,8 @@
                                     style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                                     Disconnect
                                 </button>
+                            </div>
                         </div>
-                    </div>
 
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
                             Sync All Sources Now
@@ -1224,7 +1224,7 @@
                     selectedApp: null,
                     searchQuery: '',
                     searchPerformed: false,
-                    topK: 1,
+                    topK: 10,
                     loading: false,
                     loadingMessage: 'Loading...',
                     uploading: false,
@@ -1433,6 +1433,12 @@
                                 };
                             });
 
+                            // Filter out disconnected sources
+                            const connectedSources = this.applications
+                                .filter(app => app.connected)
+                                .map(app => app.name);
+                            results = results.filter(f => connectedSources.includes(f.source));
+                            
                             // Filter by current context
                             if (this.selectedEcosystem && this.selectedEcosystem !== 'All') {
                                 results = results.filter(f => f.source === this.selectedEcosystem);
@@ -1440,7 +1446,7 @@
                             if (this.selectedFileType) {
                                 results = results.filter(f => ('.' + f.name.split('.').pop().toLowerCase()) === this.selectedFileType);
                             }
-
+                            
                             this.searchResults = results;
                         } else {
                             this.showToast(data.error || 'Search failed', 'error');
