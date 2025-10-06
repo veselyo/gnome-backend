@@ -53,8 +53,30 @@ SYNC_MANAGER.start_auto_sync()
 
 @app.route("/")
 def index():
-    """Serve Vue.js single-page application."""
+    """Serve Vue.js single-page application (or welcome screen if first launch)."""
+    # Check if user has authorized
+    authorized_file = Path.home() / '.gnome' / 'authorized'
+    
+    if not authorized_file.exists():
+        # First launch - show welcome/authorization screen
+        return render_template("welcome.html")
+    
     return render_template("index.html")
+
+
+@app.route("/api/authorize", methods=["POST"])
+def api_authorize():
+    """Mark user as having authorized file access."""
+    try:
+        authorized_file = Path.home() / '.gnome' / 'authorized'
+        authorized_file.parent.mkdir(parents=True, exist_ok=True)
+        authorized_file.write_text('authorized')
+        
+        app.logger.info("User authorized file access")
+        return jsonify({"message": "Authorization saved"}), 200
+    except Exception as exc:
+        app.logger.error(f"Failed to save authorization: {exc}")
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.route("/api/files")

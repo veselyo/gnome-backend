@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Gnome</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Rubik", -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .welcome-container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px;
+            max-width: 700px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #1c1c1c;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #637282;
+            margin-bottom: 40px;
+        }
+
+        .permission-item {
+            background: #f7f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: start;
+            gap: 16px;
+        }
+
+        .permission-icon {
+            font-size: 32px;
+        }
+
+        .permission-text h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #1c1c1c;
+        }
+
+        .permission-text p {
+            font-size: 14px;
+            color: #637282;
+            line-height: 1.5;
+        }
+
+        .btn-primary {
+            background: #673ED1;
+            color: white;
+            border: none;
+            padding: 18px 48px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 32px;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #1a0139;
+        }
+
+        .privacy-note {
+            text-align: center;
+            color: #637282;
+            font-size: 12px;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container">
+        <h1>🏡 Welcome to Gnome</h1>
+        <p class="subtitle">Your personal semantic search engine</p>
+
+        <div class="permission-item">
+            <div class="permission-icon">📁</div>
+            <div class="permission-text">
+                <h3>Access Your Local Files</h3>
+                <p>Gnome will scan Documents, Downloads, and Desktop folders to index your files. We'll never modify or delete anything.</p>
+            </div>
+        </div>
+
+        <div class="permission-item">
+            <div class="permission-icon">☁️</div>
+            <div class="permission-text">
+                <h3>Connect Cloud Storage (Optional)</h3>
+                <p>You can optionally connect Google Drive to search across all your files. This is completely optional and can be done later in Settings.</p>
+            </div>
+        </div>
+
+        <div class="permission-item">
+            <div class="permission-icon">🔒</div>
+            <div class="permission-text">
+                <h3>Your Privacy</h3>
+                <p>All files stay on your machine. We only create searchable embeddings stored in your Pinecone account. You own and control all your data.</p>
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="acceptAndContinue()">Get Started</button>
+        
+        <p class="privacy-note">
+            By continuing, you agree to let Gnome index files from your chosen folders.<br>
+            You can change folder permissions anytime in Settings.
+        </p>
+    </div>
+
+    <script>
+        function acceptAndContinue() {
+            // Set authorization flag
+            fetch('/api/authorize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authorized: true })
+            }).then(() => {
+                // Redirect to main app
+                window.location.href = '/';
+            });
+        }
+    </script>
+</body>
+</html>
