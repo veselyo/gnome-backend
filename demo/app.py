@@ -227,6 +227,17 @@ def api_sync_status():
         return jsonify({"error": str(exc)}), 500
 
 
+@app.route("/api/debug/env")
+def api_debug_env():
+    """Debug endpoint to check environment variables."""
+    return jsonify({
+        "VOYAGE_API_KEY": "set" if os.environ.get('VOYAGE_API_KEY') else "missing",
+        "PINECONE_API_KEY": "set" if os.environ.get('PINECONE_API_KEY') else "missing",
+        "GOOGLE_CLIENT_ID": os.environ.get('GOOGLE_CLIENT_ID', 'missing')[:30] + "..." if os.environ.get('GOOGLE_CLIENT_ID') else "missing",
+        "GOOGLE_CLIENT_SECRET": "set" if os.environ.get('GOOGLE_CLIENT_SECRET') else "missing"
+    })
+
+
 @app.route("/api/discover", methods=["POST"])
 def api_discover():
     """Quick file discovery - just count files without indexing."""
