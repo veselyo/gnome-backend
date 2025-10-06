@@ -688,18 +688,33 @@
 
         .ecosystem-icon {
             margin-bottom: 20px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
+        
+        .ecosystem-card:hover .ecosystem-icon {
+            transform: scale(1.05);
+        }
+        
         .ecosystem-name {
             font-size: 22px;
             font-weight: 600;
             color: #1c1c1c;
             margin: 12px 0;
+            transition: color 0.3s;
         }
-
+        
+        .ecosystem-card:hover .ecosystem-name {
+            color: #673ED1;
+        }
+        
         .ecosystem-count {
             font-size: 15px;
             color: #637282;
+            transition: color 0.3s;
+        }
+        
+        .ecosystem-card:hover .ecosystem-count {
+            color: #673ED1;
         }
 
 
@@ -780,7 +795,7 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .file-type-card:hover {
             background: rgba(255, 255, 255, 0.95);
             border-color: rgba(103, 62, 209, 0.3);
@@ -1138,7 +1153,8 @@
                                     </div>
                                     <div class="modern-file-name">{{ file.name }}</div>
                                 </div>
-                                <div class="modern-file-source" :style="{ backgroundImage: getSourceIcon(file.source) }"></div>
+                                <div class="modern-file-source"
+                                    :style="{ backgroundImage: getSourceIcon(file.source) }"></div>
                             </div>
                         </div>
                     </div>
@@ -1661,7 +1677,7 @@
                     }
                     return 'Search by meaning';
                 },
-                
+
                 getSourceIcon(source) {
                     const app = this.applications.find(a => a.name === source);
                     return app ? app.icon : 'url("/static/app_icons/finder_icon.png")';
