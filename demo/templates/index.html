@@ -923,7 +923,7 @@
                         const response = await fetch('/api/files');
                         const data = await response.json();
                         this.files = data.files || [];
-                        
+
                         // Update connection status from sync state
                         if (data.syncStatus) {
                             this.applications.forEach(app => {
@@ -933,7 +933,7 @@
                                 }
                             });
                         }
-                        
+
                         // Always clear loading after fetching
                         this.loading = false;
                     } catch (error) {
@@ -1167,7 +1167,12 @@
                         if (response.ok) {
                             this.showToast(data.message, 'success');
                             const app = this.applications.find(a => a.name === sourceName);
-                            if (app) app.connected = false;
+                            if (app) {
+                                app.connected = false;
+                                app.fileCount = 0;  // Reset file count
+                            }
+                            // Refresh file list to remove disconnected source files
+                            await this.fetchFiles();
                         } else {
                             this.showToast(data.error || 'Disconnect failed', 'error');
                         }
