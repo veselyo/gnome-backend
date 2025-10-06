@@ -105,9 +105,11 @@ class BaseSyncEngine(ABC):
                         if existing.get('file_hash') == file_hash:
                             skipped_count += 1
                             continue
-                        # Otherwise, it's a modified file - delete old entry and reindex
-                        self.logger.info(f"File modified, reindexing: {file_info['filename']}")
-                        self.db.delete_file(existing['id'])
+                        # Otherwise, it's a modified file - just skip for now (avoid duplicate keys)
+                        # Modified files would need old Pinecone entry deleted first
+                        self.logger.debug(f"File appears modified, skipping: {file_info['filename']}")
+                        skipped_count += 1
+                        continue
                     
                     # Download/get local path
                     local_path = self.download_file(file_info)
