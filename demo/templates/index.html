@@ -710,24 +710,28 @@
                         <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Connected Sources</h2>
 
                         <div class="source-card" v-for="app in applications" :key="app.name"
-                            style="background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                            <div style="display: flex; align-items: center; gap: 16px;">
-                                <div class="app-icon"
-                                    :style="{ backgroundImage: app.icon, width: '48px', height: '48px' }"></div>
-                                <div>
-                                    <div style="font-weight: 600; font-size: 18px;">{{ app.name }}</div>
-                                    <div style="color: #637282; font-size: 14px;" v-if="app.connected">Connected ✓</div>
-                                    <div style="color: #637282; font-size: 14px;" v-else>Not connected</div>
+                            style="background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 16px;">
+                                    <div class="app-icon"
+                                        :style="{ backgroundImage: app.icon, width: '48px', height: '48px' }"></div>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 18px;">{{ app.name }}</div>
+                                        <div style="color: #10b981; font-size: 14px;" v-if="app.connected">✓ Connected •
+                                            {{ app.fileCount }} files</div>
+                                        <div style="color: #637282; font-size: 14px;" v-else>Not connected</div>
+                                    </div>
                                 </div>
+                                <button v-if="!app.connected && app.name !== 'Finder'" @click="connectSource(app.name)"
+                                    class="btn-secondary" style="padding: 10px 20px; font-size: 14px;">
+                                    Connect
+                                </button>
+                                <button v-if="app.connected && app.name !== 'Finder'"
+                                    @click="disconnectSource(app.name)"
+                                    style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                                    Disconnect
+                                </button>
                             </div>
-                            <button v-if="!app.connected && app.name !== 'Finder'" @click="connectSource(app.name)"
-                                class="btn-secondary" style="padding: 10px 20px; font-size: 14px;">
-                                Connect
-                            </button>
-                            <button v-if="app.connected && app.name !== 'Finder'" @click="disconnectSource(app.name)"
-                                style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
-                                Disconnect
-                            </button>
                         </div>
 
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
