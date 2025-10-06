@@ -607,6 +607,34 @@
                 opacity: 1;
             }
         }
+        
+        /* Bottom Progress Bar */
+        .progress-bar-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: rgba(103, 62, 209, 0.1);
+            z-index: 9999;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #673ED1, #764ba2, #673ED1);
+            background-size: 200% 100%;
+            animation: flowingBar 1.5s linear infinite;
+            box-shadow: 0 0 10px rgba(103, 62, 209, 0.5);
+        }
+        
+        @keyframes flowingBar {
+            0% {
+                background-position: 0% 0%;
+            }
+            100% {
+                background-position: 200% 0%;
+            }
+        }
 
         .loading-spinner {
             display: inline-block;
