@@ -771,17 +771,21 @@
         .file-type-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(103, 62, 209, 0.08);
-            border-radius: 12px;
-            padding: 20px 12px;
+            border: 2px solid rgba(103, 62, 209, 0.08);
+            border-radius: 20px;
+            padding: 32px 16px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
-
+        
         .file-type-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(103, 62, 209, 0.15);
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(103, 62, 209, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(103, 62, 209, 0.2);
         }
 
         .type-icon-large {
@@ -868,12 +872,12 @@
         }
 
         .modern-file-source {
-            font-size: 12px;
-            color: #637282;
-            padding: 4px 10px;
-            background: rgba(103, 62, 209, 0.08);
-            border-radius: 6px;
-            white-space: nowrap;
+            width: 24px;
+            height: 24px;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            flex-shrink: 0;
         }
 
         .app-header {
@@ -1107,11 +1111,15 @@
                     <div v-if="currentView === 'files' && selectedFileType" class="full-files-view">
                         <div class="breadcrumb-header">
                             <div class="breadcrumb">
-                                <span class="breadcrumb-item" @click="selectedEcosystem = null; selectedFileType = null">All Files</span>
+                                <span class="breadcrumb-item"
+                                    @click="selectedEcosystem = null; selectedFileType = null">All Files</span>
                                 <span class="breadcrumb-separator">></span>
-                                <span class="breadcrumb-item" @click="selectedFileType = null; selectedFileTypeFiles = []">{{ selectedEcosystem }}</span>
+                                <span class="breadcrumb-item"
+                                    @click="selectedFileType = null; selectedFileTypeFiles = []">{{ selectedEcosystem
+                                    }}</span>
                                 <span class="breadcrumb-separator">></span>
-                                <span class="breadcrumb-item active">{{ selectedFileType.toUpperCase().replace('.', '') }}</span>
+                                <span class="breadcrumb-item active">{{ selectedFileType.toUpperCase().replace('.', '')
+                                    }}</span>
                             </div>
                             <span class="view-count">{{ selectedFileTypeFiles.length }} files</span>
                         </div>
@@ -1130,7 +1138,7 @@
                                     </div>
                                     <div class="modern-file-name">{{ file.name }}</div>
                                 </div>
-                                <div class="modern-file-source">{{ file.source }}</div>
+                                <div class="modern-file-source" :style="{ backgroundImage: getSourceIcon(file.source) }"></div>
                             </div>
                         </div>
                     </div>
@@ -1408,7 +1416,7 @@
                                     uploadDate: matchingFile ? matchingFile.uploadDate : result.uploadDate || result.upload_date || result.created_at
                                 };
                             });
-                            
+
                             // Filter by current context
                             if (this.selectedEcosystem && this.selectedEcosystem !== 'All') {
                                 results = results.filter(f => f.source === this.selectedEcosystem);
@@ -1416,7 +1424,7 @@
                             if (this.selectedFileType) {
                                 results = results.filter(f => ('.' + f.name.split('.').pop().toLowerCase()) === this.selectedFileType);
                             }
-                            
+
                             this.searchResults = results;
                         } else {
                             this.showToast(data.error || 'Search failed', 'error');
@@ -1643,7 +1651,7 @@
                     };
                     return gradients[e] || 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
                 },
-                
+
                 getSearchPlaceholder() {
                     if (this.selectedFileType) {
                         return `Search in ${this.selectedEcosystem} ${this.selectedFileType.toUpperCase().replace('.', '')} files...`;
@@ -1652,6 +1660,11 @@
                         return `Search in ${this.selectedEcosystem}...`;
                     }
                     return 'Search by meaning';
+                },
+                
+                getSourceIcon(source) {
+                    const app = this.applications.find(a => a.name === source);
+                    return app ? app.icon : 'url("/static/app_icons/finder_icon.png")';
                 }
             }
         }).mount('#app');
