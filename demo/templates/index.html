@@ -1600,6 +1600,39 @@
                 },
 
                 async connectSource(sourceName) {
+                    // For Google Drive, ask for email FIRST (before OAuth)
+                    if (sourceName === 'Google Drive') {
+                        const email = prompt(`🔔 Test User Access Required\n\nGnome is currently in testing mode.\n\nPlease enter your Gmail address to request access:\n\n(The developer will be notified and will add you as a test user)`);
+                        
+                        if (!email || !email.includes('@')) {
+                            this.showToast('Email required to connect', 'error');
+                            return;
+                        }
+                        
+                        // Send test user request
+                        this.loading = true;
+                        this.loadingMessage = 'Sending request to developer...';
+                        
+                        try {
+                            await fetch('/api/request-test-user', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    email: email,
+                                    source: sourceName
+                                })
+                            });
+                            
+                            this.showToast(`✅ Request sent!\n\nThe developer will add ${email} as a test user.\n\nYou can try connecting again once approved.`, 'success');
+                            this.loading = false;
+                            return;
+                        } catch (error) {
+                            this.showToast('Failed to send request', 'error');
+                            this.loading = false;
+                            return;
+                        }
+                    }
+                    
                     this.loading = true;
                     this.loadingMessage = `Connecting to ${sourceName}...`;
 
@@ -1610,8 +1643,7 @@
 
                         const response = await fetch(endpoint, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email: this.userEmail })
+                            headers: { 'Content-Type': 'application/json' }
                         });
                         const data = await response.json();
 
@@ -1626,7 +1658,7 @@
                             // Access denied - ask for email to request access
                             this.loading = false;
                             const email = prompt(`⚠️ Access Blocked\n\nGnome is currently in testing mode and requires developer approval.\n\nPlease enter your Gmail address to request test user access:\n\n(The developer will be notified and will add you as a test user)`);
-                            
+
                             if (email && email.includes('@')) {
                                 this.loading = true;
                                 this.loadingMessage = 'Sending request...';
@@ -1634,12 +1666,12 @@
                                 const requestResponse = await fetch('/api/request-test-user', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ 
+                                    body: JSON.stringify({
                                         email: email,
                                         source: sourceName
                                     })
                                 });
-                                
+
                                 if (requestResponse.ok) {
                                     this.showToast(`✅ Request sent to developer!\n\nYou will be notified once ${email} is approved.`, 'success');
                                 } else {
