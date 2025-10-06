@@ -739,15 +739,19 @@
             <!-- Sidebar -->
             <div class="sidebar">
                 <div class="nav-item" :class="{ active: currentView === 'files' }"
-                    @click="currentView = 'files'; clearSearch()">
-                    Recent
-                </div>
-                <div class="nav-item" :class="{ active: currentView === 'applications' }"
-                    @click="currentView = 'applications'; clearSearch()">
-                    All Files
+                    @click="currentView = 'files'; selectedSource = null; clearSearch()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 12px;">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                        <polyline points="13 2 13 9 20 9"></polyline>
+                    </svg>
+                    Files
                 </div>
                 <div class="nav-item" :class="{ active: currentView === 'settings' }"
                     @click="currentView = 'settings'; clearSearch()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 12px;">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v6m0 6v6m5.196-13.196l-4.242 4.242m0 5.656l-4.242 4.242M23 12h-6m-6 0H1m20.196-5.196l-4.242 4.242m0 5.656l-4.242 4.242"></path>
+                    </svg>
                     Settings
                 </div>
             </div>
