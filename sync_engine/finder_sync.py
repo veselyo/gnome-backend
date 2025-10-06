@@ -87,6 +87,9 @@ class FinderSyncEngine(BaseSyncEngine):
                 self.logger.error(f"Error scanning folder {folder}: {e}")
                 continue
         
+        # Sort by modification date (newest first) so new files get indexed first
+        files.sort(key=lambda f: f['last_modified'], reverse=True)
+        
         return files
     
     def download_file(self, file_info: Dict) -> Optional[Path]:
