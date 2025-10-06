@@ -1061,8 +1061,8 @@
                                     style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                                     Disconnect
                                 </button>
-                            </div>
                         </div>
+                    </div>
 
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
                             Sync All Sources Now
@@ -1187,7 +1187,6 @@
                             <div v-for="(file, index) in displayFiles" :key="file.name" class="modern-file-card"
                                 :class="{ 'top-result': index === 0 }" @click="handleFileClick(file)">
                                 <div class="modern-file-info">
-                                    <div v-if="index === 0" class="top-badge">Best Match</div>
                                     <div class="modern-file-icon"
                                         :style="{ background: getGradientForExt('.' + file.name.split('.').pop()) }">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white"
