@@ -97,12 +97,17 @@ class BaseSyncEngine(ABC):
                         skipped_count += 1
                         continue
                     
-                    # Also check by filename+source to avoid duplicate names
+                    # Check by filename+source, but only if NOT deleted
                     existing = next((f for f in self.db.get_files_by_source(self.source_name) 
-                                   if f['filename'] == file_info['filename']), None)
+                                   if f['filename'] == file_info['filename'] and not f.get('is_deleted', 0)), None)
                     if existing:
-                        skipped_count += 1
-                        continue
+                        # If file exists and has same hash, skip
+                        if existing.get('file_hash') == file_hash:
+                            skipped_count += 1
+                            continue
+                        # Otherwise, it's a modified file - delete old entry and reindex
+                        self.logger.info(f"File modified, reindexing: {file_info['filename']}")
+                        self.db.delete_file(existing['id'])
                     
                     # Download/get local path
                     local_path = self.download_file(file_info)
