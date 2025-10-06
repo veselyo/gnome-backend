@@ -324,21 +324,42 @@ def api_disconnect(source):
 
 @app.route("/api/open-file/<filename>")
 def api_open_file(filename):
-    """Open a local file in Finder."""
+    """Open a file in appropriate app (Finder for local, browser for cloud)."""
     try:
         # Get file from database
         files = SYNC_MANAGER.get_all_files()
-        file_info = next((f for f in files if f['filename'] == filename and f['source'] == 'Finder'), None)
+        file_info = next((f for f in files if f['filename'] == filename), None)
         
         if not file_info:
             return jsonify({"error": "File not found"}), 404
         
-        file_path = file_info['file_path']
-        
-        # Open file in default app (macOS)
-        subprocess.run(['open', file_path], check=True)
-        
-        return jsonify({"message": "File opened"}), 200
+        if file_info['source'] == 'Finder':
+            # Open local file in default app (macOS)
+            file_path = file_info['file_path']
+            subprocess.run(['open', file_path], check=True)
+            return jsonify({"message": "File opened in Finder"}), 200
+            
+        elif file_info['source'] == 'Google Drive':
+            # Open Google Drive file in default browser
+            import json
+            metadata = file_info.get('metadata', {})
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except:
+                    metadata = {}
+            
+            url = metadata.get('webUrl') or metadata.get('webViewLink')
+            if not url:
+                # Construct URL from Drive ID
+                url = f"https://drive.google.com/file/d/{file_info['file_path']}/view"
+            
+            # Open in external browser
+            subprocess.run(['open', url], check=True)
+            return jsonify({"message": "File opened in browser"}), 200
+        else:
+            return jsonify({"error": "Unsupported source"}), 400
+            
     except Exception as exc:
         app.logger.error(f"Failed to open file: {exc}")
         return jsonify({"error": str(exc)}), 500

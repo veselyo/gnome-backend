@@ -1070,7 +1070,7 @@
                         this.showToast('File is still being indexed...', 'info');
                         return;
                     }
-                    
+
                     // Open file in appropriate app
                     if (file.source === 'Finder') {
                         // Open local file via API (keeps Gnome open)
@@ -1102,11 +1102,11 @@
                     this.loadingMessage = `Connecting to ${sourceName}...`;
 
                     try {
-                        const endpoint = sourceName === 'Google Drive' 
+                        const endpoint = sourceName === 'Google Drive'
                             ? '/api/connect/google-drive'
                             : '/api/connect/onedrive';
-                        
-                        const response = await fetch(endpoint, { 
+
+                        const response = await fetch(endpoint, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' }
                         });
@@ -1122,7 +1122,7 @@
                         } else if (response.status === 403 && data.action === 'request_access') {
                             // Access denied - ask user to request access
                             const email = prompt(`${sourceName} requires approval.\n\nEnter your ${sourceName === 'Google Drive' ? 'Gmail' : 'Microsoft'} email to request access:`);
-                            
+
                             if (email && email.includes('@')) {
                                 // Send access request
                                 const requestResponse = await fetch(endpoint, {
@@ -1133,7 +1133,7 @@
                                         email: email
                                     })
                                 });
-                                
+
                                 const requestData = await requestResponse.json();
                                 if (requestResponse.ok || requestResponse.status === 202) {
                                     this.showToast(`Access requested! Admin will add ${email} as a test user.`, 'success');
