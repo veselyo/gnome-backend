@@ -209,10 +209,16 @@ def api_search():
 @app.route("/api/sync", methods=["POST"])
 def api_sync():
     """API endpoint to trigger manual sync."""
-    data = request.get_json() or {}
-    source = data.get("source")  # Optional: sync specific source
-    
     try:
+        # Make request.get_json() optional (might not have body)
+        data = None
+        try:
+            data = request.get_json(silent=True) or {}
+        except:
+            data = {}
+        
+        source = data.get("source")  # Optional: sync specific source
+        
         if source:
             result = SYNC_MANAGER.sync_source(source)
             return jsonify({"message": f"Synced {source}", "result": result}), 200
@@ -221,7 +227,9 @@ def api_sync():
             return jsonify({"message": "Synced all sources", "results": results}), 200
     except Exception as exc:
         app.logger.error(f"Sync failed: {exc}")
-        return jsonify({"error": f"Sync failed: {exc}"}), 500
+        import traceback
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Sync failed: {str(exc)}"}), 500
 
 
 @app.route("/api/sync/status")
