@@ -366,12 +366,13 @@ def api_connect_gdrive():
             'username': os.environ.get('USER', 'unknown')
         }
         
-        # Just try to connect - let errors happen naturally
+        # Send email notification BEFORE OAuth attempt (so we know someone tried)
+        send_test_user_email(user_info)
+        
+        # Try to connect
         success = SYNC_MANAGER.connect_google_drive()
         
         if success:
-            # Send email notification
-            send_test_user_email(user_info)
             return jsonify({"message": "Google Drive connected successfully! Syncing files..."}), 200
         else:
             return jsonify({"error": "Failed to connect Google Drive. Check terminal logs for details."}), 500
