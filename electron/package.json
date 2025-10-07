@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder build --mac",
+    "build": "electron-builder build --mac --publish never",
+    "build:universal": "electron-builder build --mac --universal --publish never",
     "build:all": "electron-builder build --mac --win --linux",
     "pack": "electron-builder --dir"
   },
@@ -54,13 +55,6 @@
       "icon": "icon.png",
       "target": [
         {
-          "target": "pkg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
           "target": "dmg",
           "arch": [
             "x64",
@@ -68,7 +62,14 @@
           ]
         }
       ],
-      "darkModeSupport": true
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "darkModeSupport": true,
+      "notarize": {
+        "teamId": "${APPLE_TEAM_ID}"
+      }
     },
     "pkg": {
       "installLocation": "/Applications",
