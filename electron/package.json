@@ -46,6 +46,27 @@
         ]
       },
       {
+        "from": "../sync_engine",
+        "to": "app/sync_engine",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../database",
+        "to": "app/database",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../oauth",
+        "to": "app/oauth",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
         "from": "../requirements.txt",
         "to": "app/requirements.txt"
       }
