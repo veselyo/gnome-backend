@@ -14,6 +14,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 import socket
+import requests
+import json
 
 # Ensure semantic_search package is importable
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -46,11 +48,72 @@ UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 # Initialize external clients once
 VOYAGE_CLIENT = init_voyage()
 PINECONE_IDX = init_pinecone_idx()
-NAMESPACE = "demo"
+
+# Generate unique namespace per user (based on machine UUID)
+import uuid
+import platform
+def get_user_namespace():
+    """Generate a unique namespace for this user's machine."""
+    # Use machine UUID + hostname for uniqueness
+    machine_id = str(uuid.getnode())  # MAC address as int
+    hostname = platform.node()
+    # Create stable hash for this machine
+    namespace_string = f"{machine_id}_{hostname}"
+    import hashlib
+    namespace_hash = hashlib.sha256(namespace_string.encode()).hexdigest()[:16]
+    return f"user_{namespace_hash}"
+
+NAMESPACE = get_user_namespace()
+app.logger.info(f"Using Pinecone namespace: {NAMESPACE}")
+
+# Grafana Cloud telemetry (optional - requires GRAFANA_CLOUD_API_KEY in env)
+def send_telemetry(event_name: str, properties: dict = None):
+    """Send telemetry events to Grafana Cloud for analytics."""
+    try:
+        grafana_url = os.environ.get('GRAFANA_CLOUD_URL')
+        grafana_key = os.environ.get('GRAFANA_CLOUD_API_KEY')
+        
+        if not grafana_url or not grafana_key:
+            return  # Telemetry disabled if not configured
+        
+        # Send event as Grafana Loki log
+        timestamp_ns = int(datetime.now().timestamp() * 1e9)
+        payload = {
+            "streams": [{
+                "stream": {
+                    "app": "gnome",
+                    "namespace": NAMESPACE,
+                    "event": event_name
+                },
+                "values": [[str(timestamp_ns), json.dumps({
+                    "event": event_name,
+                    "properties": properties or {},
+                    "user_namespace": NAMESPACE
+                })]]
+            }]
+        }
+        
+        requests.post(
+            f"{grafana_url}/loki/api/v1/push",
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            auth=("", grafana_key),
+            timeout=2
+        )
+    except Exception as e:
+        # Silent fail - don't break app if telemetry fails
+        app.logger.debug(f"Telemetry failed: {e}")
 
 # Initialize database and sync manager
 DB = GnomeDatabase()
 SYNC_MANAGER = SyncManager(DB, VOYAGE_CLIENT, PINECONE_IDX, NAMESPACE)
+
+# Send app launch telemetry
+send_telemetry("app_launched", {
+    "version": "1.0.0",
+    "platform": platform.system(),
+    "hostname": platform.node()
+})
 
 # Start auto-sync in background
 SYNC_MANAGER.start_auto_sync()
@@ -226,6 +289,14 @@ def api_search():
         # Debug: Log top result
         if results:
             app.logger.info(f"  Top result: {results[0]['name']} (score: {results[0]['similarity']:.3f})")
+        
+        # Send telemetry
+        send_telemetry("search_performed", {
+            "query_length": len(query),
+            "results_count": len(results),
+            "top_score": results[0]['similarity'] if results else 0
+        })
+        
         return jsonify({"results": results}), 200
         
     except Exception as exc:  # pylint: disable=broad-except
@@ -425,6 +496,11 @@ def api_connect_gdrive():
             }
             send_test_user_email(user_info)
             
+            # Send telemetry
+            send_telemetry("google_drive_connected", {
+                "email_domain": google_email.split('@')[-1] if '@' in google_email else "unknown"
+            })
+            
             return jsonify({"message": "Google Drive connected successfully! Syncing files..."}), 200
         else:
             return jsonify({"error": "Failed to connect Google Drive. Check terminal logs for details."}), 500
@@ -489,6 +565,13 @@ def api_open_file(filename):
             # Open local file in default app (macOS)
             file_path = file_info['file_path']
             subprocess.run(['open', file_path], check=True)
+            
+            # Send telemetry
+            send_telemetry("file_opened", {
+                "source": "Finder",
+                "file_type": filename.split('.')[-1] if '.' in filename else "unknown"
+            })
+            
             return jsonify({"message": "File opened in Finder"}), 200
             
         elif file_info['source'] == 'Google Drive':
