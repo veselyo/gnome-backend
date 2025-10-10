@@ -22,6 +22,20 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+# Import bundled config for API keys
+try:
+    from config.bundled_config import get_api_key
+    USE_BUNDLED_CONFIG = True
+    # Set environment variables from bundled config (if not already set)
+    for key_name in ["VOYAGE_API_KEY", "PINECONE_API_KEY", "PINECONE_HOST", "COHERE_API_KEY"]:
+        if not os.environ.get(key_name):
+            bundled_value = get_api_key(key_name)
+            if bundled_value:
+                os.environ[key_name] = bundled_value
+except ImportError:
+    # Fallback if config module not available
+    USE_BUNDLED_CONFIG = False
+
 from semantic_search.parsing_engine import parse_local_pdf
 from semantic_search.embedding_engine import init_voyage, embed_pdf
 from semantic_search.vector_database import (
