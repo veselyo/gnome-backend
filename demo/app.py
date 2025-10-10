@@ -52,19 +52,28 @@ PINECONE_IDX = init_pinecone_idx()
 # Generate unique namespace per user (based on machine UUID)
 import uuid
 import platform
+import hashlib
+
 def get_user_namespace():
     """Generate a unique namespace for this user's machine."""
-    # Use machine UUID + hostname for uniqueness
+    # Check if this is a packaged app (production) vs dev environment
+    import sys
+    is_packaged = getattr(sys, 'frozen', False) or 'app.asar' in sys.argv[0]
+    
+    if not is_packaged:
+        # Development mode - use demo namespace to keep existing data
+        return "demo"
+    
+    # Production - unique namespace per user
     machine_id = str(uuid.getnode())  # MAC address as int
     hostname = platform.node()
     # Create stable hash for this machine
     namespace_string = f"{machine_id}_{hostname}"
-    import hashlib
     namespace_hash = hashlib.sha256(namespace_string.encode()).hexdigest()[:16]
     return f"user_{namespace_hash}"
 
 NAMESPACE = get_user_namespace()
-app.logger.info(f"Using Pinecone namespace: {NAMESPACE}")
+app.logger.info(f"Using Pinecone namespace: {NAMESPACE} (packaged: {getattr(__import__('sys'), 'frozen', False)})")
 
 # Grafana Cloud telemetry (optional - requires GRAFANA_CLOUD_API_KEY in env)
 def send_telemetry(event_name: str, properties: dict = None):
