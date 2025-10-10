@@ -6,18 +6,30 @@ set -e
 echo "=== Building Gnome DMG with Bundled API Keys ==="
 echo ""
 
-# Load API keys from .env
+# Load API keys from .env (parse manually since it's not bash-sourceable)
 if [ -f "electron/.env" ]; then
-    source electron/.env
+    export $(grep -v '^#' electron/.env | xargs)
 else
     echo "❌ Error: electron/.env not found"
     exit 1
 fi
 
+# Also try ~/.gnome-env as fallback
+if [ -z "$VOYAGE_API_KEY" ] && [ -f "$HOME/.gnome-env" ]; then
+    export $(grep -v '^#' "$HOME/.gnome-env" | xargs)
+fi
+
 # Verify keys are loaded
-if [ -z "$VOYAGE_API_KEY" ] || [ -z "$PINECONE_API_KEY" ] || [ -z "$COHERE_API_KEY" ]; then
-    echo "❌ Error: API keys not found in electron/.env"
+if [ -z "$VOYAGE_API_KEY" ] || [ -z "$PINECONE_API_KEY" ] || [ -z "$PINECONE_HOST" ]; then
+    echo "❌ Error: Required API keys not found"
+    echo "Need: VOYAGE_API_KEY, PINECONE_API_KEY, PINECONE_HOST"
+    echo "In: electron/.env or ~/.gnome-env"
     exit 1
+fi
+
+# Cohere is optional (custom reranking used instead)
+if [ -z "$COHERE_API_KEY" ]; then
+    COHERE_API_KEY=""
 fi
 
 echo "✅ API keys loaded from electron/.env"

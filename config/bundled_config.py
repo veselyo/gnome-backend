@@ -6,12 +6,10 @@ import base64
 import os
 
 # Obfuscated API keys (Base64 encoded)
-# Users can override by setting environment variables
 _BUNDLED_KEYS = {
-    # These will be filled with your actual keys, base64 encoded
-    "VOYAGE_API_KEY": "",  # Will be set during build
-    "PINECONE_API_KEY": "",
-    "PINECONE_HOST": "",
+    "VOYAGE_API_KEY": "cGEtMnE4WXFWTkcwWVBYV3REZnRVVHk2dWlyQXlJZFN5UTVFOGV1dEhPM1ZCSQ==",
+    "PINECONE_API_KEY": "cGNza195NG9pVl9UWTNYdWd5Mk1peUNvWjVBOWpxZVdQUkhOU05pd3pEVGFyWlYzSkNCSjVyR2p6dHJjNTlxcFB5cThCM0hMQVg=",
+    "PINECONE_HOST": "aHR0cHM6Ly92b3lhZ2UtbXVsdGltb2RhbC0zLThkb3kzMmUuc3ZjLmFwZWQtNDYyNy1iNzRhLnBpbmVjb25lLmlv",
     "COHERE_API_KEY": ""
 }
 
@@ -48,12 +46,3 @@ def get_api_key(key_name: str) -> str:
             return ""
     
     return ""
-
-def set_bundled_keys(voyage_key: str, pinecone_key: str, pinecone_host: str, cohere_key: str):
-    """Set bundled keys (called during build process)."""
-    global _BUNDLED_KEYS
-    _BUNDLED_KEYS["VOYAGE_API_KEY"] = base64.b64encode(voyage_key.encode()).decode()
-    _BUNDLED_KEYS["PINECONE_API_KEY"] = base64.b64encode(pinecone_key.encode()).decode()
-    _BUNDLED_KEYS["PINECONE_HOST"] = base64.b64encode(pinecone_host.encode()).decode()
-    _BUNDLED_KEYS["COHERE_API_KEY"] = base64.b64encode(cohere_key.encode()).decode()
-
