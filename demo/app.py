@@ -477,6 +477,53 @@ def api_request_test_user():
         return jsonify({"error": str(exc)}), 500
 
 
+@app.route("/api/request-integration", methods=["POST"])
+def api_request_integration():
+    """Handle user request for new app integration."""
+    try:
+        data = request.get_json()
+        app_name = data.get('app_name', 'Not specified')
+        
+        # Send email notification to developer
+        sender_email = os.environ.get('GMAIL_USER', 'gnome.app.notifications@gmail.com')
+        sender_password = os.environ.get('GMAIL_APP_PASSWORD', '')
+        
+        if not sender_password:
+            app.logger.warning("No Gmail password configured - skipping integration request email")
+            return jsonify({"message": "Request received"}), 200
+        
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = "kennethfrisard05@gmail.com"
+        msg['Subject'] = f"🔌 New Integration Request: {app_name}"
+        
+        body = f"""
+        New integration request for Gnome!
+        
+        Requested App: {app_name}
+        Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        Hostname: {socket.gethostname()}
+        Username: {os.environ.get('USER', 'unknown')}
+        
+        User wants to connect {app_name} to Gnome for file indexing and search.
+        
+        —
+        Gnome App
+        """
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+        
+        app.logger.info(f"Integration request email sent for: {app_name}")
+        return jsonify({"message": "Integration request sent successfully"}), 200
+    except Exception as exc:
+        app.logger.error(f"Failed to send integration request: {exc}")
+        return jsonify({"error": str(exc)}), 500
+
+
 @app.route("/api/connect/google-drive", methods=["POST"])
 def api_connect_gdrive():
     """Initiate Google Drive OAuth connection."""
