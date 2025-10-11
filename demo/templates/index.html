@@ -1122,29 +1122,31 @@
                                     style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                                     Disconnect
                                 </button>
+                            </div>
                         </div>
-                    </div>
 
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
                             Sync All Sources Now
                         </button>
-                        
+
                         <!-- Request New Integration Section -->
-                        <div style="margin-top: 48px; padding-top: 32px; border-top: 2px solid rgba(103, 62, 209, 0.1);">
-                            <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Request New Integration</h2>
+                        <div
+                            style="margin-top: 48px; padding-top: 32px; border-top: 2px solid rgba(103, 62, 209, 0.1);">
+                            <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Request New Integration
+                            </h2>
                             <p style="color: #637282; font-size: 14px; margin-bottom: 20px;">
                                 Want to connect Dropbox, OneDrive, iCloud Drive, or another service? Let us know!
                             </p>
-                            
-                            <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                                <input type="text" 
-                                    v-model="requestedApp" 
+
+                            <div
+                                style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <input type="text" v-model="requestedApp"
                                     placeholder="e.g., Dropbox, OneDrive, iCloud Drive..."
                                     style="width: 100%; padding: 12px 16px; border: 2px solid rgba(103, 62, 209, 0.15); border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.3s; margin-bottom: 12px;"
                                     @focus="$event.target.style.borderColor='#673ED1'"
                                     @blur="$event.target.style.borderColor='rgba(103, 62, 209, 0.15)'"
                                     @keyup.enter="requestIntegration">
-                                
+
                                 <button @click="requestIntegration" class="btn-primary" style="width: 100%;">
                                     📧 Submit Request
                                 </button>
@@ -1322,9 +1324,9 @@
                         <div class="empty-state-text">Enter a natural language query in the search bar above</div>
                     </div>
 
-                    </div>
                 </div>
             </div>
+        </div>
 
         <!-- Bottom Progress Bar (instead of spinner) -->
         <div v-if="loading" class="progress-bar-container">
@@ -1631,8 +1633,8 @@
 
                     // Open file in appropriate app
                     if (file.source === 'Finder') {
-                        // Open local file via API (keeps Gnome open)
-                        fetch(`/api/open-file/${encodeURIComponent(file.name)}`)
+                        // Open local file via API (keeps Gnome open) - pass source to avoid duplicates
+                        fetch(`/api/open-file/${encodeURIComponent(file.name)}?source=Finder`)
                             .then(() => this.showToast(`Opened ${file.name}`, 'success'))
                             .catch(() => this.showToast('Failed to open file', 'error'));
                     } else if (file.source === 'Google Drive') {
@@ -1767,22 +1769,22 @@
                     };
                     return colorMap[ext] || '#6b7280';
                 },
-                
+
                 async requestIntegration() {
                     if (!this.requestedApp || !this.requestedApp.trim()) {
                         this.showToast('Please enter an app name', 'error');
                         return;
                     }
-                    
+
                     try {
                         const response = await fetch('/api/request-integration', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ app_name: this.requestedApp.trim() })
                         });
-                        
+
                         const data = await response.json();
-                        
+
                         if (response.ok) {
                             this.showToast(`✅ Request sent! We'll consider adding ${this.requestedApp}`, 'success');
                             this.requestedApp = ''; // Clear input

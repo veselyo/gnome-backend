@@ -624,9 +624,18 @@ def api_disconnect(source):
 def api_open_file(filename):
     """Open a file in appropriate app (Finder for local, browser for cloud)."""
     try:
+        # Get optional source parameter to handle duplicate filenames
+        source = request.args.get('source')
+        
         # Get file from database
         files = SYNC_MANAGER.get_all_files()
-        file_info = next((f for f in files if f['filename'] == filename), None)
+        
+        # If source specified, match both filename and source (avoids duplicates)
+        if source:
+            file_info = next((f for f in files if f['filename'] == filename and f['source'] == source), None)
+        else:
+            # Fall back to filename only (backward compatibility)
+            file_info = next((f for f in files if f['filename'] == filename), None)
         
         if not file_info:
             return jsonify({"error": "File not found"}), 404
