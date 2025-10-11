@@ -1122,8 +1122,8 @@
                                     style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                                     Disconnect
                                 </button>
-                            </div>
                         </div>
+                    </div>
 
                         <button @click="triggerSync" class="btn-primary" style="width: 100%; margin-top: 24px;">
                             Sync All Sources Now
@@ -1324,9 +1324,9 @@
                         <div class="empty-state-text">Enter a natural language query in the search bar above</div>
                     </div>
 
+                    </div>
                 </div>
             </div>
-        </div>
 
         <!-- Bottom Progress Bar (instead of spinner) -->
         <div v-if="loading" class="progress-bar-container">
@@ -1638,19 +1638,10 @@
                             .then(() => this.showToast(`Opened ${file.name}`, 'success'))
                             .catch(() => this.showToast('Failed to open file', 'error'));
                     } else if (file.source === 'Google Drive') {
-                        // Open Google Drive file in browser tab (same as OAuth!)
-                        const url = file.cloudUrl || `https://drive.google.com/file/d/${file.file_path}/view`;
-
-                        // Create hidden link and click it (forces browser to handle, not Electron)
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.target = '_blank';
-                        link.rel = 'noopener noreferrer';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-
-                        this.showToast('Opening in browser...', 'success');
+                        // Open Google Drive file via backend (uses webbrowser.open - same as OAuth!)
+                        fetch(`/api/open-file/${encodeURIComponent(file.name)}?source=Google%20Drive`)
+                            .then(() => this.showToast('Opening in browser...', 'success'))
+                            .catch(() => this.showToast('Failed to open file', 'error'));
                     } else {
                         this.showToast('File location unavailable', 'error');
                     }
