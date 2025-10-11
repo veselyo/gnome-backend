@@ -671,8 +671,9 @@ def api_open_file(filename):
             # Open in browser tab using Python's webbrowser module (same as OAuth flow)
             import webbrowser
             try:
-                # This opens in existing browser as new tab (same method OAuth uses)
-                webbrowser.open(url, new=2)  # new=2 means new tab if possible
+                # This opens in existing browser as new tab - matches OAuth behavior
+                # new=2 = new tab if possible, autoraise=True = bring browser to front
+                webbrowser.open(url, new=2, autoraise=True)
                 app.logger.info(f"Opened Google Drive file in browser: {file_info['filename']}")
             except Exception as browser_error:
                 app.logger.warning(f"Browser open failed, using system default: {browser_error}")
