@@ -119,7 +119,8 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
     
     def fetch_files(self) -> List[Dict]:
         """
-        Fetch PDF files from Google Drive with retry logic.
+        Fetch ALL supported files from Google Drive with retry logic.
+        Includes PDFs, Office docs, images, and native Google formats.
         
         Returns:
             List of file info dicts
@@ -134,16 +135,28 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
         max_retries = 3
         
         try:
-            # Query for multiple file types (PDFs, docs, images, etc.)
+            # Query for ALL supported file types including native Google formats
             mime_types = [
+                # Standard formats
                 "mimeType='application/pdf'",
                 "mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document'",  # DOCX
                 "mimeType='application/vnd.openxmlformats-officedocument.presentationml.presentation'",  # PPTX
                 "mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'",  # XLSX
+                "mimeType='application/msword'",  # DOC
+                "mimeType='application/vnd.ms-powerpoint'",  # PPT
+                "mimeType='application/vnd.ms-excel'",  # XLS
                 "mimeType='text/plain'",  # TXT
                 "mimeType='text/markdown'",  # MD
+                "mimeType='text/csv'",  # CSV
                 "mimeType='image/png'",
-                "mimeType='image/jpeg'"
+                "mimeType='image/jpeg'",
+                "mimeType='image/jpg'",
+                "mimeType='image/gif'",
+                "mimeType='image/webp'",
+                # Native Google formats (will be exported)
+                "mimeType='application/vnd.google-apps.document'",  # Google Docs
+                "mimeType='application/vnd.google-apps.spreadsheet'",  # Google Sheets
+                "mimeType='application/vnd.google-apps.presentation'",  # Google Slides
             ]
             query = f"({' or '.join(mime_types)}) and trashed=false"
             
@@ -159,9 +172,24 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
                     ).execute()
                     
                     for file in response.get('files', []):
-                        # Get file extension
+                        # Get file extension and mime type
                         filename = file['name']
+                        mime_type = file.get('mimeType', '')
                         ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+                        
+                        # Handle Google native formats - add appropriate extension
+                        if mime_type == 'application/vnd.google-apps.document':
+                            if not filename.endswith('.docx'):
+                                filename = f"{filename}.docx"
+                                ext = 'docx'
+                        elif mime_type == 'application/vnd.google-apps.spreadsheet':
+                            if not filename.endswith('.xlsx'):
+                                filename = f"{filename}.xlsx"
+                                ext = 'xlsx'
+                        elif mime_type == 'application/vnd.google-apps.presentation':
+                            if not filename.endswith('.pptx'):
+                                filename = f"{filename}.pptx"
+                                ext = 'pptx'
                         
                         files.append({
                             'filename': filename,
@@ -173,8 +201,9 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
                             'metadata': {
                                 'drive_id': file['id'],
                                 'webUrl': file.get('webViewLink'),  # URL to open in browser
-                                'mimeType': file.get('mimeType', ''),
-                                'extension': f'.{ext}' if ext else ''
+                                'mimeType': mime_type,
+                                'extension': f'.{ext}' if ext else '',
+                                'is_google_native': mime_type.startswith('application/vnd.google-apps.')
                             }
                         })
                     
@@ -193,7 +222,7 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
                     else:
                         raise  # Give up after max retries
             
-            self.logger.info(f"✅ Fetched {len(files)} PDFs from Google Drive")
+            self.logger.info(f"✅ Fetched {len(files)} files from Google Drive")
             return files
             
         except Exception as e:
@@ -205,6 +234,7 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
     def download_file(self, file_info: Dict) -> Optional[Path]:
         """
         Download a file from Google Drive to temp location.
+        Handles both regular files and Google native formats (exports them).
         
         Args:
             file_info: File information from fetch_files()
@@ -220,6 +250,8 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
             import io
             
             drive_id = file_info['metadata']['drive_id']
+            mime_type = file_info['metadata'].get('mimeType', '')
+            is_google_native = file_info['metadata'].get('is_google_native', False)
             
             # Download to temp file
             temp_dir = Path(tempfile.gettempdir()) / 'gnome_cache'
@@ -227,7 +259,27 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
             
             temp_file = temp_dir / file_info['filename']
             
-            request = self.service.files().get_media(fileId=drive_id)
+            # Handle Google native formats - export instead of download
+            if is_google_native:
+                # Map Google formats to export MIME types
+                export_formats = {
+                    'application/vnd.google-apps.document': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  # Docs -> DOCX
+                    'application/vnd.google-apps.spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',  # Sheets -> XLSX
+                    'application/vnd.google-apps.presentation': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',  # Slides -> PPTX
+                }
+                
+                export_mime = export_formats.get(mime_type)
+                if export_mime:
+                    request = self.service.files().export_media(fileId=drive_id, mimeType=export_mime)
+                    self.logger.info(f"Exporting Google native format: {file_info['filename']}")
+                else:
+                    self.logger.warning(f"Unknown Google format: {mime_type}, trying regular download")
+                    request = self.service.files().get_media(fileId=drive_id)
+            else:
+                # Regular file download
+                request = self.service.files().get_media(fileId=drive_id)
+            
+            # Download/export the file
             fh = io.FileIO(str(temp_file), 'wb')
             downloader = MediaIoBaseDownload(fh, request)
             

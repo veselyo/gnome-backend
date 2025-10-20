@@ -222,11 +222,11 @@ def get_supported_extensions() -> List[str]:
     """Get list of supported file extensions."""
     return [
         '.pdf',
-        '.png', '.jpg', '.jpeg',
-        '.docx',
-        '.pptx',
-        '.xlsx', '.csv',
-        '.txt', '.md'
+        '.png', '.jpg', '.jpeg', '.gif', '.webp',
+        '.docx', '.doc',
+        '.pptx', '.ppt',
+        '.xlsx', '.xls', '.csv',
+        '.txt', '.md', '.rtf'
     ]
 
 

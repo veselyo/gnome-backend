@@ -144,6 +144,27 @@ class GnomeDatabase:
             files.append(file_dict)
         return files
     
+    def get_all_indexed_files(self) -> List[Dict]:
+        """Get all indexed (searchable) files."""
+        import json
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            SELECT * FROM files 
+            WHERE is_deleted = 0 AND is_indexed = 1
+            ORDER BY last_modified DESC
+        ''')
+        files = []
+        for row in cursor.fetchall():
+            file_dict = dict(row)
+            # Parse metadata JSON if present
+            if file_dict.get('metadata'):
+                try:
+                    file_dict['metadata'] = json.loads(file_dict['metadata'])
+                except:
+                    file_dict['metadata'] = {}
+            files.append(file_dict)
+        return files
+    
     def mark_file_deleted(self, file_id: int):
         """Mark a file as deleted (soft delete)."""
         cursor = self.conn.cursor()
