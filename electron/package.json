@@ -95,7 +95,9 @@
       "entitlements": "entitlements.mac.plist",
       "entitlementsInherit": "entitlements.mac.plist",
       "darkModeSupport": true,
-      "notarize": false
+      "notarize": {
+        "teamId": "SU882674F3"
+      }
     },
     "pkg": {
       "installLocation": "/Applications",
