@@ -302,11 +302,11 @@ def api_search():
         # - Sophisticated relevance filtering
         try:
             # Get full corpus from database for better BM25 scoring
-            all_files = db.get_all_indexed_files()
+            all_db_files = SYNC_MANAGER.get_all_files()
             corpus = []
-            for f in all_files:
+            for f in all_db_files:
                 corpus.append({
-                    'id': f['id'],
+                    'id': f.get('id') or f.get('pinecone_id'),
                     'name': f['filename'],
                     'content': '',  # Could add content extraction later
                     'last_modified': f.get('last_modified')
