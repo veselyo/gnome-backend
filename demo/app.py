@@ -9,6 +9,7 @@ import traceback
 import sys
 import secrets
 import os
+import re
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -237,15 +238,46 @@ def api_search():
         return jsonify({"error": "Please enter a query."}), 400
 
     try:
-        # Step 1: Semantic search via Pinecone
+        # Get all files from database for matching
+        db_files = SYNC_MANAGER.get_all_files()
+        db_files_dict = {f['pinecone_id']: f for f in db_files}
+        
+        # Step 1: FILENAME-BASED SEARCH FIRST (ensures exact matches always appear)
+        filename_matches = []
+        query_lower = query.lower()
+        query_words = set(re.findall(r'\w+', query_lower))
+        
+        for file in db_files:
+            if not file.get('pinecone_id'):
+                continue  # Skip files not in Pinecone
+                
+            filename_lower = file['filename'].lower()
+            filename_words = set(re.findall(r'\w+', filename_lower))
+            
+            # Check for filename matches
+            if query_lower in filename_lower or query_words.issubset(filename_words):
+                # Create a "match" entry for this file
+                filename_matches.append({
+                    'id': file['pinecone_id'],
+                    'score': 1.0,  # Perfect score for filename match
+                    'metadata': {'filename': file['filename'], 'source': file['source']},
+                    'from_filename': True
+                })
+        
+        # Step 2: Semantic search via Pinecone
         response = semantic_search(
             query, PINECONE_IDX, VOYAGE_CLIENT, top_k, NAMESPACE
         )
         matches = response.get("matches", [])
-
-        # Get all files from database for matching
-        db_files = SYNC_MANAGER.get_all_files()
-        db_files_dict = {f['pinecone_id']: f for f in db_files}
+        
+        # Merge filename matches with semantic matches (filename matches go first)
+        matched_ids = {m['id'] for m in filename_matches}
+        for match in matches:
+            if match['id'] not in matched_ids:
+                match['from_filename'] = False
+                filename_matches.append(match)
+        
+        matches = filename_matches[:top_k]  # Use merged results
         
         # Format results with metadata from Pinecone + Database
         results = []
