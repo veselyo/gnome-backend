@@ -240,13 +240,13 @@ class AdvancedReranker:
             # 5. File type relevance
             scores['file_type'] = self._calculate_file_type_score(query, result)
             
-            # Weighted combination
+            # Weighted combination - STRONG preference for exact filename matches
             final_score = (
-                scores['semantic'] * 0.35 +
-                scores['bm25'] * 0.30 +
-                scores['exact_match'] * 0.20 +
-                scores['recency'] * 0.10 +
-                scores['file_type'] * 0.05
+                scores['semantic'] * 0.25 +
+                scores['bm25'] * 0.25 +
+                scores['exact_match'] * 0.40 +  # Much higher weight for exact matches
+                scores['recency'] * 0.08 +
+                scores['file_type'] * 0.02
             )
             
             result['final_score'] = final_score
@@ -264,42 +264,58 @@ class AdvancedReranker:
         return 1 / (1 + math.exp(-score / 5))
     
     def _calculate_exact_match(self, query: str, doc: Dict) -> float:
-        """Calculate exact match score."""
+        """Calculate exact match score with STRONG preference for filename matches."""
         query_lower = query.lower().strip()
         filename_lower = doc.get('name', '').lower()
         
-        # Exact substring match
-        if query_lower in filename_lower:
+        # Remove file extension for better matching
+        filename_base = filename_lower.rsplit('.', 1)[0] if '.' in filename_lower else filename_lower
+        
+        # Exact filename match (without extension) - VERY HIGH score
+        if query_lower == filename_base:
             return 1.0
         
-        # All query words present
-        query_words = set(re.findall(r'\w+', query_lower))
-        filename_words = set(re.findall(r'\w+', filename_lower))
+        # Query is a word in the filename (e.g., "resume" in "resume_2024.pdf")
+        filename_words = re.findall(r'\w+', filename_base)
+        query_words = re.findall(r'\w+', query_lower)
         
-        if query_words and query_words.issubset(filename_words):
-            return 0.8
+        # Exact word match in filename - VERY HIGH score
+        if query_words and len(query_words) == 1:
+            if query_words[0] in filename_words:
+                return 1.0  # Single word exact match is perfect
+        
+        # Exact substring match
+        if query_lower in filename_base:
+            return 0.95
+        
+        # All query words present as whole words
+        query_words_set = set(query_words)
+        filename_words_set = set(filename_words)
+        
+        if query_words_set and query_words_set.issubset(filename_words_set):
+            return 0.9
         
         # Partial word match
-        overlap = len(query_words & filename_words)
-        if query_words:
-            return (overlap / len(query_words)) * 0.6
+        overlap = len(query_words_set & filename_words_set)
+        if query_words_set:
+            return (overlap / len(query_words_set)) * 0.7
         
         return 0.0
     
     def _calculate_recency_score(self, doc: Dict) -> float:
-        """Calculate recency score based on last_modified."""
+        """Calculate recency score based on last_modified with stronger preference for recent files."""
         from datetime import datetime, timezone
         
         last_modified = doc.get('last_modified')
         if not last_modified:
-            return 0.5  # Neutral score if no date
+            return 0.3  # Lower neutral score if no date
         
         # Convert to datetime if string
         if isinstance(last_modified, str):
             try:
                 last_modified = datetime.fromisoformat(last_modified)
             except:
-                return 0.5
+                return 0.3
         
         # Calculate age in days
         now = datetime.now(timezone.utc)
@@ -308,11 +324,18 @@ class AdvancedReranker:
         
         age_days = (now - last_modified).days
         
-        # Decay function: newer files score higher
+        # Stronger decay function: heavily favor recent files
         # Files from today: 1.0
-        # Files from 30 days ago: 0.5
-        # Files from 365 days ago: 0.1
-        score = 1.0 / (1.0 + age_days / 30.0)
+        # Files from 7 days ago: ~0.7
+        # Files from 30 days ago: ~0.4
+        # Files from 365 days ago: ~0.05
+        if age_days <= 0:
+            return 1.0
+        elif age_days <= 7:
+            return 1.0 - (age_days / 7) * 0.3  # Slow decay for very recent
+        else:
+            score = 1.0 / (1.0 + (age_days - 7) / 20.0)  # Faster decay after a week
+        
         return max(0.0, min(1.0, score))
     
     def _calculate_file_type_score(self, query: str, doc: Dict) -> float:

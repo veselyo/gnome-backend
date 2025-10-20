@@ -166,7 +166,7 @@ class GoogleDriveSyncEngine(BaseSyncEngine):
                     response = self.service.files().list(
                         q=query,
                         spaces='drive',
-                        fields='nextPageToken, files(id, name, size, modifiedTime, webContentLink, webViewLink)',
+                        fields='nextPageToken, files(id, name, mimeType, size, modifiedTime, webContentLink, webViewLink)',
                         pageToken=page_token,
                         pageSize=100
                     ).execute()
