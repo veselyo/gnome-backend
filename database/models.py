@@ -145,12 +145,12 @@ class GnomeDatabase:
         return files
     
     def get_all_indexed_files(self) -> List[Dict]:
-        """Get all indexed (searchable) files."""
+        """Get all indexed (searchable) files - files that have a Pinecone ID."""
         import json
         cursor = self.conn.cursor()
         cursor.execute('''
             SELECT * FROM files 
-            WHERE is_deleted = 0 AND is_indexed = 1
+            WHERE is_deleted = 0 AND pinecone_id IS NOT NULL AND pinecone_id != ''
             ORDER BY last_modified DESC
         ''')
         files = []
