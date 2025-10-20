@@ -231,7 +231,7 @@ def api_search():
     """API endpoint for hybrid semantic + keyword search across all sources."""
     data = request.get_json()
     query = data.get("query", "").strip() if data else ""
-    top_k = data.get("top_k", 30) if data else 30  # Get more results for reranking
+    top_k = data.get("top_k", 100) if data else 100  # Get MANY more results for reranking (was 30)
 
     if not query:
         return jsonify({"error": "Please enter a query."}), 400
@@ -322,14 +322,18 @@ def api_search():
             results = boost_exact_matches(query, results, boost_factor=0.35)
             results = filter_by_relevance(results, min_score=0.05)
         
-        # Return top 10 after reranking
-        results = results[:10]
+        # Return top 15 after reranking (increased from 10)
+        results = results[:15]
 
         app.logger.info(f"Search '{query}': Returning {len(results)} results")
         
-        # Debug: Log top result
+        # Debug: Log top 3 results with score breakdown
         if results:
             app.logger.info(f"  Top result: {results[0]['name']} (score: {results[0]['similarity']:.3f})")
+            if len(results) > 1:
+                app.logger.info(f"  2nd result: {results[1]['name']} (score: {results[1]['similarity']:.3f})")
+            if len(results) > 2:
+                app.logger.info(f"  3rd result: {results[2]['name']} (score: {results[2]['similarity']:.3f})")
         
         # Send telemetry
         send_telemetry("search_performed", {
