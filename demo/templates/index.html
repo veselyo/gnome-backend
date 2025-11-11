@@ -1190,6 +1190,18 @@
                             <div class="ecosystem-count">{{ files.filter(f => f.source === 'Google Drive').length }}
                                 files</div>
                         </div>
+
+                        <!-- Gmail Card -->
+                        <div class="ecosystem-card" @click="selectedEcosystem = 'Gmail'">
+                            <div class="ecosystem-icon">
+                                <div class="app-icon"
+                                    style="width: 64px; height: 64px; background-image: url('/static/app_icons/gmail_icon.png');">
+                                </div>
+                            </div>
+                            <h3 class="ecosystem-name">Gmail</h3>
+                            <div class="ecosystem-count">{{ files.filter(f => f.source === 'Gmail').length }}
+                                files</div>
+                        </div>
                     </div>
 
                     <!-- File Types View (Files View - Step 2) -->
