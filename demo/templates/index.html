@@ -1360,7 +1360,8 @@
                     isButtonDragOver: false,
                     applications: [
                         { name: 'Finder', icon: 'url("/static/app_icons/finder_icon.png")', connected: true },
-                        { name: 'Google Drive', icon: 'url("/static/app_icons/gdrive_icon.png")', connected: false }
+                        { name: 'Google Drive', icon: 'url("/static/app_icons/gdrive_icon.png")', connected: false },
+                        { name: 'Gmail', icon: 'url("/static/app_icons/gmail_icon.png")', connected: false }
                     ],
                     toast: {
                         visible: false,
@@ -1667,9 +1668,14 @@
                     this.loadingMessage = `Connecting to ${sourceName}...`;
 
                     try {
-                        const endpoint = sourceName === 'Google Drive'
-                            ? '/api/connect/google-drive'
-                            : '/api/connect/onedrive';
+                        let endpoint;
+                        if (sourceName === 'Google Drive') {
+                            endpoint = '/api/connect/google-drive';
+                        } else if (sourceName === 'Gmail') {
+                            endpoint = '/api/connect/gmail';
+                        } else {
+                            endpoint = '/api/connect/onedrive';
+                        }
 
                         const response = await fetch(endpoint, {
                             method: 'POST',

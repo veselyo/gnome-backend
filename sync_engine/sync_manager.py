@@ -9,6 +9,7 @@ from database.models import GnomeDatabase
 from sync_engine.finder_sync import FinderSyncEngine
 from sync_engine.gdrive_sync import GoogleDriveSyncEngine
 from sync_engine.onedrive_sync import OneDriveSyncEngine
+from sync_engine.gmail_sync import GmailSyncEngine
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class SyncManager:
         self.engines = {
             'Finder': FinderSyncEngine(database),
             'Google Drive': GoogleDriveSyncEngine(database),
+            'Gmail': GmailSyncEngine(database),
             'OneDrive': OneDriveSyncEngine(database)
         }
         
@@ -180,6 +182,23 @@ class SyncManager:
             return success
         except Exception as e:
             logger.error(f"OneDrive connection failed: {e}")
+            return False
+    
+    def connect_gmail(self) -> bool:
+        """Initiate Gmail OAuth connection to index email attachments."""
+        try:
+            engine = self.engines['Gmail']
+            success = engine.authenticate()
+            if success:
+                # Trigger immediate sync after connection
+                logger.info("Gmail connected, syncing attachments...")
+                threading.Thread(
+                    target=lambda: engine.sync(self.voyage_client, self.pinecone_idx, self.namespace, max_files=100),
+                    daemon=True
+                ).start()
+            return success
+        except Exception as e:
+            logger.error(f"Gmail connection failed: {e}")
             return False
     
     def disconnect_source(self, source_name: str):

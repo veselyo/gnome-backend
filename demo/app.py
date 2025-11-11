@@ -629,6 +629,26 @@ def api_connect_onedrive():
         return jsonify({"error": f"Connection error: {str(exc)}"}), 500
 
 
+@app.route("/api/connect/gmail", methods=["POST"])
+def api_connect_gmail():
+    """Initiate Gmail OAuth connection to index email attachments."""
+    try:
+        # Gmail uses same Google OAuth as Drive (just different scopes)
+        if not os.environ.get('GOOGLE_CLIENT_ID') or not os.environ.get('GOOGLE_CLIENT_SECRET'):
+            return jsonify({
+                "error": "Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env file."
+            }), 400
+        
+        success = SYNC_MANAGER.connect_gmail()
+        if success:
+            return jsonify({"message": "Gmail connected successfully! Indexing email attachments..."}), 200
+        else:
+            return jsonify({"error": "Failed to connect Gmail. Check logs for details."}), 500
+    except Exception as exc:
+        app.logger.error(f"Gmail connection failed: {exc}")
+        return jsonify({"error": f"Connection error: {str(exc)}"}), 500
+
+
 @app.route("/api/disconnect/<source>", methods=["POST"])
 def api_disconnect(source):
     """Disconnect a cloud source."""
