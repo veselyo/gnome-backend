@@ -74,6 +74,13 @@
         ]
       },
       {
+        "from": "../resources",
+        "to": "app/resources",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
         "from": "../requirements.txt",
         "to": "app/requirements.txt"
       }

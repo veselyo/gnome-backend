@@ -1,0 +1,4 @@
+# Large model files - download separately or bundle in DMG only
+bge-onnx/
+*.safetensors
+*.bin

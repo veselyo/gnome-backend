@@ -41,12 +41,41 @@ def process_file(file_path: str, voyage_client) -> List[float]:
 
 
 def process_pdf(file_path: Path, voyage_client) -> List[float]:
-    """Process PDF using existing multimodal pipeline."""
-    from semantic_search.parsing_engine import parse_local_pdf
-    from semantic_search.embedding_engine import embed_pdf
+    """
+    Process PDF with TEXT-FIRST approach (better for legal/business documents).
+    Falls back to image processing only if no text found.
+    """
+    import fitz  # PyMuPDF
     
-    images = parse_local_pdf(str(file_path))
-    return embed_pdf(images, voyage_client)
+    try:
+        # PRIORITY 1: Extract text directly (fast, accurate for text PDFs)
+        doc = fitz.open(file_path)
+        all_text = []
+        
+        for page in doc:
+            text = page.get_text()
+            if text.strip():
+                all_text.append(text)
+        
+        doc.close()
+        
+        # If we got substantial text, use it
+        full_text = '\n'.join(all_text)
+        if len(full_text.strip()) > 100:  # At least 100 chars
+            logger.info(f"Processing PDF as text: {file_path.name} ({len(full_text)} chars)")
+            return embed_text(full_text, voyage_client)
+        
+        # FALLBACK: No text found - use image-based processing (scanned PDFs)
+        logger.info(f"No text found, processing PDF as images: {file_path.name}")
+        from semantic_search.parsing_engine import parse_local_pdf
+        from semantic_search.embedding_engine import embed_pdf
+        
+        images = parse_local_pdf(str(file_path))
+        return embed_pdf(images, voyage_client)
+        
+    except Exception as e:
+        logger.error(f"Failed to process PDF {file_path}: {e}")
+        raise
 
 
 def process_image(file_path: Path, voyage_client) -> List[float]:

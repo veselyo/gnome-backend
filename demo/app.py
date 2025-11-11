@@ -23,24 +23,15 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-# Import bundled config for API keys
-try:
-    from config.bundled_config import get_api_key
-    USE_BUNDLED_CONFIG = True
-    # Set environment variables from bundled config (if not already set)
-    for key_name in ["VOYAGE_API_KEY", "PINECONE_API_KEY", "PINECONE_HOST", "COHERE_API_KEY"]:
-        if not os.environ.get(key_name):
-            bundled_value = get_api_key(key_name)
-            if bundled_value:
-                os.environ[key_name] = bundled_value
-except ImportError:
-    # Fallback if config module not available
-    USE_BUNDLED_CONFIG = False
+# === GNOME PRIVATE EDITION ===
+# No API keys needed - everything runs locally!
+# Removed: bundled_config (cloud API keys)
+# Using: Local BGE embeddings + ChromaDB vector storage
 
 from semantic_search.parsing_engine import parse_local_pdf
-from semantic_search.embedding_engine import init_voyage, embed_pdf
+from semantic_search.embedding_engine import init_local_embedder, embed_pdf, LocalEmbedderClient
 from semantic_search.vector_database import (
-    init_pinecone_idx,
+    init_chroma_db,
     store_embeddings,
     semantic_search,
 )
@@ -61,9 +52,11 @@ app.secret_key = secrets.token_hex(16)
 UPLOAD_FOLDER: Path = app.config["UPLOAD_FOLDER"]
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
-# Initialize external clients once
-VOYAGE_CLIENT = init_voyage()
-PINECONE_IDX = init_pinecone_idx()
+# Initialize LOCAL embedding model and vector database (100% PRIVATE!)
+app.logger.info("🔐 GNOME PRIVATE EDITION - Initializing local AI...")
+VOYAGE_CLIENT = LocalEmbedderClient()  # Local BGE model (no cloud API)
+PINECONE_IDX = init_chroma_db()         # Local ChromaDB (no Pinecone)
+app.logger.info("✅ All AI running locally - ZERO data leaves your Mac!")
 
 # Generate unique namespace per user (based on machine UUID)
 import uuid
@@ -91,43 +84,14 @@ def get_user_namespace():
 NAMESPACE = get_user_namespace()
 app.logger.info(f"Using Pinecone namespace: {NAMESPACE} (packaged: {getattr(__import__('sys'), 'frozen', False)})")
 
-# Grafana Cloud telemetry (optional - requires GRAFANA_CLOUD_API_KEY in env)
+# === PRIVACY-FIRST: NO TELEMETRY ===
+# Gnome Private Edition - No tracking, no analytics, no data collection
 def send_telemetry(event_name: str, properties: dict = None):
-    """Send telemetry events to Grafana Cloud for analytics."""
-    try:
-        grafana_url = os.environ.get('GRAFANA_CLOUD_URL')
-        grafana_key = os.environ.get('GRAFANA_CLOUD_API_KEY')
-        
-        if not grafana_url or not grafana_key:
-            return  # Telemetry disabled if not configured
-        
-        # Send event as Grafana Loki log
-        timestamp_ns = int(datetime.now().timestamp() * 1e9)
-        payload = {
-            "streams": [{
-                "stream": {
-                    "app": "gnome",
-                    "namespace": NAMESPACE,
-                    "event": event_name
-                },
-                "values": [[str(timestamp_ns), json.dumps({
-                    "event": event_name,
-                    "properties": properties or {},
-                    "user_namespace": NAMESPACE
-                })]]
-            }]
-        }
-        
-        requests.post(
-            f"{grafana_url}/loki/api/v1/push",
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            auth=("", grafana_key),
-            timeout=2
-        )
-    except Exception as e:
-        # Silent fail - don't break app if telemetry fails
-        app.logger.debug(f"Telemetry failed: {e}")
+    """
+    Telemetry permanently disabled for privacy.
+    Your usage data stays on your Mac - we don't track anything!
+    """
+    pass  # No-op - kept for backward compatibility
 
 # Initialize database and sync manager
 DB = GnomeDatabase()
@@ -426,12 +390,13 @@ def api_sync_status():
 
 @app.route("/api/debug/env")
 def api_debug_env():
-    """Debug endpoint to check environment variables."""
+    """Debug endpoint - Gnome Private Edition status."""
     return jsonify({
-        "VOYAGE_API_KEY": "set" if os.environ.get('VOYAGE_API_KEY') else "missing",
-        "PINECONE_API_KEY": "set" if os.environ.get('PINECONE_API_KEY') else "missing",
-        "GOOGLE_CLIENT_ID": os.environ.get('GOOGLE_CLIENT_ID', 'missing')[:30] + "..." if os.environ.get('GOOGLE_CLIENT_ID') else "missing",
-        "GOOGLE_CLIENT_SECRET": "set" if os.environ.get('GOOGLE_CLIENT_SECRET') else "missing"
+        "mode": "PRIVATE EDITION",
+        "embeddings": "Local BGE model (1024-dim)",
+        "vector_db": "ChromaDB (local storage)",
+        "privacy": "100% on-premises - no cloud APIs",
+        "google_oauth": "set" if os.environ.get('GOOGLE_CLIENT_ID') else "disabled (optional)"
     })
 
 
