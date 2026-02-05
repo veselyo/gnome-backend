@@ -1,35 +1,35 @@
-# === GNOME PRIVATE EDITION - 100% LOCAL ===
+# === GNOME MVP - Cloud-powered semantic search ===
 # Core web framework
 flask
 
-# === LOCAL AI/ML (No Cloud APIs) ===
-sentence-transformers>=3.2.0     # Local embeddings
-onnxruntime>=1.19.0              # Fast CPU inference (or onnxruntime-silicon for M1/M2/M3)
-chromadb>=0.5.0                  # Local vector database
-faiss-cpu>=1.8.0                 # Optional: Hybrid vector search
+# === Cloud AI Services ===
+voyageai>=0.3.0                  # Voyage AI embeddings (voyage-3)
+pinecone>=5.0.0                  # Pinecone vector database
+
+# === Search Enhancement ===
+rank-bm25>=0.2.2                 # BM25 keyword scoring for reranking
 
 # === Document Processing ===
 PyMuPDF                          # PDF parsing
 Pillow                           # Image processing
-pytesseract>=0.3.10              # OCR (bundled binary)
+pytesseract>=0.3.10              # OCR (requires Tesseract binary)
 python-docx                      # Word documents
 python-pptx                      # PowerPoint
 openpyxl                         # Excel spreadsheets
 
-# === Optional Cloud Integrations (Toggleable) ===
-# Google Drive sync (optional - can be disabled)
+# === Google Integrations (Gmail, Google Drive) ===
 google-auth-oauthlib
 google-auth-httplib2
 google-api-python-client
-# OneDrive sync (future)
-msal
-requests
+
+# === Microsoft Integrations (Outlook, OneDrive) ===
+msal                             # Microsoft authentication
+requests                         # HTTP requests
 
 # === Utilities ===
 python-dotenv                    # Environment config
 watchdog                         # Real-time file watching
 numpy                            # Array operations
 
-# === Removed (Cloud-only) ===
-# voyageai - REPLACED with local sentence-transformers
-# pinecone - REPLACED with local ChromaDB
+# === macOS Integration ===
+pyobjc-framework-Cocoa; sys_platform == 'darwin'  # Native macOS file handling

@@ -16,11 +16,9 @@ class FinderSyncEngine(BaseSyncEngine):
     def __init__(self, database):
         super().__init__(database, 'Finder')
         
-        # Default folders to watch
+        # Default folders to watch - only Downloads to avoid iCloud overlap
         self.default_folders = [
-            Path.home() / 'Documents',
-            Path.home() / 'Downloads',
-            Path.home() / 'Desktop'
+            Path.home() / 'Downloads'
         ]
     
     def authenticate(self) -> bool:
@@ -50,24 +48,29 @@ class FinderSyncEngine(BaseSyncEngine):
                 if folder.exists():
                     self.db.add_watched_folder('Finder', str(folder), recursive=True)
         
-        # Get supported file extensions
+        # Get supported file extensions and import is_supported_file for filtering
         supported_exts = get_supported_extensions()
-        
+        from semantic_search.file_processor import is_supported_file
+
         # Scan each folder
         for folder in folders_to_scan:
             if not folder.exists():
                 self.logger.warning(f"Folder does not exist: {folder}")
                 continue
-            
+
             try:
                 # Find all supported files recursively
                 for ext in supported_exts:
                     pattern = f'*{ext}'
                     for file_path in folder.rglob(pattern):
                         try:
+                            # Skip files in dev folders (venv, node_modules, etc.)
+                            if not is_supported_file(file_path):
+                                continue
+
                             stat = file_path.stat()
                             file_hash = compute_file_hash(str(file_path))
-                            
+
                             files.append({
                                 'filename': file_path.name,
                                 'file_path': str(file_path),
@@ -82,7 +85,7 @@ class FinderSyncEngine(BaseSyncEngine):
                         except Exception as e:
                             self.logger.warning(f"Error reading {file_path}: {e}")
                             continue
-                        
+
             except Exception as e:
                 self.logger.error(f"Error scanning folder {folder}: {e}")
                 continue

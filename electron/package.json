@@ -32,57 +32,25 @@
     ],
     "extraResources": [
       {
-        "from": "../demo",
-        "to": "app/demo",
+        "from": "../dist/gnome-backend",
+        "to": "app/backend/gnome-backend",
         "filter": [
           "**/*"
         ]
       },
       {
-        "from": "../semantic_search",
-        "to": "app/semantic_search",
+        "from": "../demo/templates",
+        "to": "app/demo/templates",
         "filter": [
           "**/*"
         ]
       },
       {
-        "from": "../sync_engine",
-        "to": "app/sync_engine",
+        "from": "../demo/static",
+        "to": "app/demo/static",
         "filter": [
           "**/*"
         ]
-      },
-      {
-        "from": "../database",
-        "to": "app/database",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "../oauth",
-        "to": "app/oauth",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "../config",
-        "to": "app/config",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "../resources",
-        "to": "app/resources",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "../requirements.txt",
-        "to": "app/requirements.txt"
       }
     ],
     "mac": {
